@@ -1,0 +1,27 @@
+{
+  "expo": {
+    "name": "RewardApp",
+    "slug": "rewardapp",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FFFFFF"
+    },
+    "android": {
+      "package": "com.yourcompany.rewardapp",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#FFFFFF"
+      },
+      "permissions": []
+    },
+    "ios": {
+      "bundleIdentifier": "com.yourcompany.rewardapp",
+      "supportsTablet": false
+    }
+  }
+}
