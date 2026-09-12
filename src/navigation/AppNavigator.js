@@ -1,7 +1,6 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 
 import { colors } from '../theme/colors';
@@ -10,10 +9,8 @@ import OffersScreen from '../screens/OffersScreen';
 import ReferScreen from '../screens/ReferScreen';
 import MyOffersScreen from '../screens/MyOffersScreen';
 import ProfileScreen from '../screens/ProfileScreen';
-import WithdrawScreen from '../screens/WithdrawScreen';
 
 const Tab = createBottomTabNavigator();
-const ProfileStack = createNativeStackNavigator();
 
 const ICONS = {
   Home: 'home',
@@ -22,17 +19,6 @@ const ICONS = {
   'My Offers': 'clipboard',
   Profile: 'person',
 };
-
-// Profile tab gets its own stack so Withdraw can push on top of it,
-// matching "Profile -> Withdraw" in the screenshots.
-function ProfileStackScreen() {
-  return (
-    <ProfileStack.Navigator screenOptions={{ headerShown: false }}>
-      <ProfileStack.Screen name="ProfileHome" component={ProfileScreen} />
-      <ProfileStack.Screen name="Withdraw" component={WithdrawScreen} />
-    </ProfileStack.Navigator>
-  );
-}
 
 export default function AppNavigator() {
   return (
@@ -62,9 +48,8 @@ export default function AppNavigator() {
         <Tab.Screen name="Offers" component={OffersScreen} />
         <Tab.Screen name="Refer" component={ReferScreen} />
         <Tab.Screen name="My Offers" component={MyOffersScreen} />
-        <Tab.Screen name="Profile" component={ProfileStackScreen} />
+        <Tab.Screen name="Profile" component={ProfileScreen} />
       </Tab.Navigator>
     </NavigationContainer>
   );
-                        }
-                
+}
