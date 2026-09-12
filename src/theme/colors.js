@@ -1,10 +1,10 @@
 // Central theme file. Change values here to re-theme the whole app.
 export const colors = {
   // Brand
-  primary: '#FF3E86',      // main pink (buttons, active states)
-  primaryDark: '#D81B60',  // pressed / gradient end
-  primaryLight: '#FFE3EE', // soft pink backgrounds, chips
-  accent: '#FF7AA8',       // secondary pink accent
+  primary: '#FF3E86',
+  primaryDark: '#D81B60',
+  primaryLight: '#FFE3EE',
+  accent: '#FF7AA8',
 
   // Neutrals
   background: '#FAFAFC',
@@ -51,4 +51,24 @@ export const typography = {
   body: { fontSize: 15, fontWeight: '400' },
   label: { fontSize: 13, fontWeight: '600' },
   small: { fontSize: 12, fontWeight: '400' },
+};
+
+// Dark theme — used ONLY by Splash, Login, and Onboarding/Signup screens.
+// Everything else in the app (Home, Offers, Refer, My Offers, Profile,
+// Withdraw) keeps using the light `colors` palette above, unchanged.
+export const darkColors = {
+  primary: '#FF3E86',
+  primaryDark: '#D81B60',
+  primaryLight: '#3A2A4A',
+  accent: '#B24BF3',
+
+  background: '#0B0B1E',
+  surface: '#161634',
+  border: '#2A2A4A',
+
+  textPrimary: '#FFFFFF',
+  textSecondary: '#B8B3D9',
+  textMuted: '#6E6A8C',
+
+  white: '#FFFFFF',
 };
