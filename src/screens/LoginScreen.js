@@ -27,6 +27,7 @@ export default function LoginScreen({ onLoginSuccess }) {
       scopes: ['openid', 'profile', 'email'],
       redirectUri,
       responseType: AuthSession.ResponseType.Token,
+      AuthSession.ResponseType.Token, usePKCE: false
     },
     discovery
   );
