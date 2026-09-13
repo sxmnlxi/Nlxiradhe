@@ -31,7 +31,7 @@ export default function HomeScreen({ navigation }) {
         </TouchableOpacity>
         <Text style={styles.greeting}>Welcome back!</Text>
         <TouchableOpacity onPress={goToWallet} style={styles.coinBadge}>
-          <Ionicons name="logo-bitcoin" size={16} color={colors.primary} />
+          <Ionicons name="logo-bitcoin" size={16} color={colors.gold} />
           <Text style={styles.coinBadgeText}>{coinBalance.toFixed(2)}</Text>
         </TouchableOpacity>
       </View>
@@ -66,7 +66,7 @@ export default function HomeScreen({ navigation }) {
               {offer.isUnlimited && <Text style={styles.unlimitedTag}>Unlimited</Text>}
             </View>
             <View style={styles.rewardBox}>
-              <Ionicons name="logo-bitcoin" size={14} color={colors.primary} />
+              <Ionicons name="logo-bitcoin" size={14} color={colors.gold} />
               <Text style={styles.rewardText}>{offer.reward}</Text>
             </View>
           </TouchableOpacity>
