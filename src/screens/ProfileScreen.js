@@ -4,10 +4,11 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { colors, spacing, radius, typography } from '../theme/colors';
 import WithdrawScreen from './WithdrawScreen';
+import LeaderboardScreen from './LeaderboardScreen';
 import { getDeviceId } from '../utils/deviceId';
 import { useUserData } from '../context/UserDataContext';
+import AnimatedCoin from '../components/AnimatedCoin';
 
-// TODO: replace with your real support email.
 const SUPPORT_EMAIL = 'support@yourapp.com';
 
 const FAQS = [
@@ -17,7 +18,7 @@ const FAQS = [
 ];
 
 export default function ProfileScreen({ route, navigation }) {
-  const [showWithdraw, setShowWithdraw] = useState(false);
+  const [page, setPage] = useState('menu');
   const [account, setAccount] = useState(null);
   const { offerStatuses, withdrawals, completeWithdrawal } = useUserData();
 
@@ -40,14 +41,10 @@ export default function ProfileScreen({ route, navigation }) {
 
   useEffect(() => {
     if (route?.params?.openWithdraw) {
-      setShowWithdraw(true);
+      setPage('withdraw');
       navigation.setParams({ openWithdraw: undefined, ts: undefined });
     }
   }, [route?.params?.ts]);
-
-  if (showWithdraw) {
-    return <WithdrawScreen navigation={{ goBack: () => setShowWithdraw(false) }} />;
-  }
 
   const completedOffers = Object.entries(offerStatuses).filter(([, entry]) => entry.status === 'completed');
   const totalEarned = completedOffers.reduce((sum, [, e]) => sum + e.reward, 0);
@@ -80,13 +77,90 @@ export default function ProfileScreen({ route, navigation }) {
     );
   };
 
+  if (page === 'withdraw') {
+    return <WithdrawScreen navigation={{ goBack: () => setPage('menu') }} />;
+  }
+
+  if (page === 'leaderboard') {
+    return <LeaderboardScreen onBack={() => setPage('menu')} />;
+  }
+
+  if (page === 'transactions') {
+    return (
+      <SubPage title="Transaction history" onBack={() => setPage('menu')}>
+        {completedOffers.length === 0 ? (
+          <Text style={styles.emptyText}>No completed offers yet.</Text>
+        ) : (
+          completedOffers.map(([id, entry], i) => (
+            <FadeInRow key={id} delay={i * 60}>
+              <View style={styles.txRow}>
+                <View style={styles.txIcon}><Ionicons name="arrow-down-circle" size={20} color={colors.success} /></View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.txTitle}>{entry.name}</Text>
+                  <Text style={styles.txSubtitle}>Offer reward</Text>
+                </View>
+                <Text style={styles.txAmount}>+{entry.reward}</Text>
+              </View>
+            </FadeInRow>
+          ))
+        )}
+      </SubPage>
+    );
+  }
+
+  if (page === 'withdrawals') {
+    return (
+      <SubPage title="Withdrawal history" onBack={() => setPage('menu')}>
+        <Text style={styles.subHeading}>Pending</Text>
+        {pendingWithdrawals.length === 0 ? (
+          <Text style={styles.emptyText}>No pending withdrawals.</Text>
+        ) : (
+          pendingWithdrawals.map((w) => (
+            <View key={w.id} style={styles.txRow}>
+              <View style={[styles.txIcon, { backgroundColor: colors.warningBg }]}><Ionicons name="time-outline" size={18} color={colors.warning} /></View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.txTitle}>{w.method.toUpperCase()} withdrawal</Text>
+                <Text style={styles.txSubtitle}>{new Date(w.date).toLocaleDateString()}</Text>
+              </View>
+              <Text style={styles.txAmountNeutral}>-{w.amount}</Text>
+              <TouchableOpacity style={styles.devBtnSmall} onPress={() => completeWithdrawal(w.id)}>
+                <Text style={styles.devBtnSmallText}>Mark paid</Text>
+              </TouchableOpacity>
+            </View>
+          ))
+        )}
+        <Text style={styles.subHeading}>Successful</Text>
+        {successfulWithdrawals.length === 0 ? (
+          <Text style={styles.emptyText}>No successful withdrawals yet.</Text>
+        ) : (
+          successfulWithdrawals.map((w) => (
+            <View key={w.id} style={styles.txRow}>
+              <View style={[styles.txIcon, { backgroundColor: colors.successBg }]}><Ionicons name="checkmark-circle" size={18} color={colors.success} /></View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.txTitle}>{w.method.toUpperCase()} withdrawal</Text>
+                <Text style={styles.txSubtitle}>{new Date(w.date).toLocaleDateString()}</Text>
+              </View>
+              <Text style={styles.txAmountNeutral}>-{w.amount}</Text>
+            </View>
+          ))
+        )}
+      </SubPage>
+    );
+  }
+
+  if (page === 'faqs') {
+    return (
+      <SubPage title="FAQs" onBack={() => setPage('menu')}>
+        {FAQS.map((item, i) => <FaqItem key={i} question={item.q} answer={item.a} />)}
+      </SubPage>
+    );
+  }
+
   return (
     <ScrollView style={styles.screen} contentContainerStyle={{ paddingBottom: 60 }}>
       <Animated.View style={{ opacity: fade, transform: [{ translateY }] }}>
         <View style={styles.userCard}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarLetter}>{(account?.name || 'F')[0].toUpperCase()}</Text>
-          </View>
+          <View style={styles.avatar}><Text style={styles.avatarLetter}>{(account?.name || 'F')[0].toUpperCase()}</Text></View>
           <Text style={styles.userName}>{account?.name || 'Friend'}</Text>
           <Text style={styles.userEmail}>{account?.email || ''}</Text>
           <View style={styles.detailsRow}>
@@ -108,74 +182,18 @@ export default function ProfileScreen({ route, navigation }) {
           </View>
         </View>
 
-        <TouchableOpacity style={styles.withdrawBtn} activeOpacity={0.85} onPress={() => setShowWithdraw(true)}>
+        <TouchableOpacity style={styles.withdrawBtn} activeOpacity={0.85} onPress={() => setPage('withdraw')}>
           <Ionicons name="wallet-outline" size={18} color={colors.white} />
           <Text style={styles.withdrawText}>Withdraw</Text>
         </TouchableOpacity>
 
-        <SectionTitle title="Transaction history" />
-        {completedOffers.length === 0 ? (
-          <Text style={styles.emptyText}>No completed offers yet.</Text>
-        ) : (
-          completedOffers.map(([id, entry], i) => (
-            <FadeInRow key={id} delay={i * 60}>
-              <View style={styles.txRow}>
-                <View style={styles.txIcon}><Ionicons name="arrow-down-circle" size={20} color={colors.success} /></View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.txTitle}>{entry.name}</Text>
-                  <Text style={styles.txSubtitle}>Offer reward</Text>
-                </View>
-                <Text style={styles.txAmount}>+{entry.reward}</Text>
-              </View>
-            </FadeInRow>
-          ))
-        )}
-
-        <SectionTitle title="Withdrawal history" />
-        <Text style={styles.subHeading}>Pending</Text>
-        {pendingWithdrawals.length === 0 ? (
-          <Text style={styles.emptyText}>No pending withdrawals.</Text>
-        ) : (
-          pendingWithdrawals.map((w) => (
-            <View key={w.id} style={styles.txRow}>
-              <View style={[styles.txIcon, { backgroundColor: colors.warningBg }]}><Ionicons name="time-outline" size={18} color={colors.warning} /></View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.txTitle}>{w.method.toUpperCase()} withdrawal</Text>
-                <Text style={styles.txSubtitle}>{new Date(w.date).toLocaleDateString()}</Text>
-              </View>
-              <Text style={styles.txAmountNeutral}>-{w.amount}</Text>
-              <TouchableOpacity style={styles.devBtnSmall} onPress={() => completeWithdrawal(w.id)}>
-                <Text style={styles.devBtnSmallText}>Mark paid</Text>
-              </TouchableOpacity>
-            </View>
-          ))
-        )}
-
-        <Text style={styles.subHeading}>Successful</Text>
-        {successfulWithdrawals.length === 0 ? (
-          <Text style={styles.emptyText}>No successful withdrawals yet.</Text>
-        ) : (
-          successfulWithdrawals.map((w) => (
-            <View key={w.id} style={styles.txRow}>
-              <View style={[styles.txIcon, { backgroundColor: colors.successBg }]}><Ionicons name="checkmark-circle" size={18} color={colors.success} /></View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.txTitle}>{w.method.toUpperCase()} withdrawal</Text>
-                <Text style={styles.txSubtitle}>{new Date(w.date).toLocaleDateString()}</Text>
-              </View>
-              <Text style={styles.txAmountNeutral}>-{w.amount}</Text>
-            </View>
-          ))
-        )}
-
-        <SectionTitle title="FAQs" />
-        {FAQS.map((item, i) => <FaqItem key={i} question={item.q} answer={item.a} />)}
-
-        <SectionTitle title="Need help?" />
-        <TouchableOpacity style={styles.contactBtn} activeOpacity={0.85} onPress={handleContactUs}>
-          <Ionicons name="mail-outline" size={18} color={colors.primary} />
-          <Text style={styles.contactBtnText}>Contact us</Text>
-          <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
-        </TouchableOpacity>
+        <View style={styles.menuList}>
+          <MenuRow icon="receipt-outline" label="Transaction history" onPress={() => setPage('transactions')} />
+          <MenuRow icon="card-outline" label="Withdrawal history" onPress={() => setPage('withdrawals')} />
+          <MenuRow icon="trophy-outline" label="Leaderboard" onPress={() => setPage('leaderboard')} />
+          <MenuRow icon="help-circle-outline" label="FAQs" onPress={() => setPage('faqs')} />
+          <MenuRow icon="mail-outline" label="Contact us" onPress={handleContactUs} last />
+        </View>
 
         <TouchableOpacity style={styles.devBtn} onPress={handleResetTestAccount}>
           <Ionicons name="refresh-outline" size={16} color={colors.textMuted} />
@@ -186,6 +204,35 @@ export default function ProfileScreen({ route, navigation }) {
   );
 }
 
+function SubPage({ title, onBack, children }) {
+  const fade = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.timing(fade, { toValue: 1, duration: 350, useNativeDriver: true }).start();
+  }, []);
+
+  return (
+    <ScrollView style={styles.screen} contentContainerStyle={{ paddingBottom: 40 }}>
+      <View style={styles.subHeader}>
+        <TouchableOpacity onPress={onBack} style={styles.backBtn}>
+          <Ionicons name="chevron-back" size={22} color={colors.textPrimary} />
+        </TouchableOpacity>
+        <Text style={styles.subHeaderTitle}>{title}</Text>
+      </View>
+      <Animated.View style={{ opacity: fade }}>{children}</Animated.View>
+    </ScrollView>
+  );
+}
+
+function MenuRow({ icon, label, onPress, last }) {
+  return (
+    <TouchableOpacity style={[styles.menuRow, !last && styles.menuRowBorder]} activeOpacity={0.7} onPress={onPress}>
+      <Ionicons name={icon} size={20} color={colors.primary} />
+      <Text style={styles.menuRowLabel}>{label}</Text>
+      <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+    </TouchableOpacity>
+  );
+}
+
 function DetailChip({ icon, label, full }) {
   return (
     <View style={[styles.chip, full && { width: '100%', marginTop: spacing.xs }]}>
@@ -193,10 +240,6 @@ function DetailChip({ icon, label, full }) {
       <Text style={styles.chipText}>{label}</Text>
     </View>
   );
-}
-
-function SectionTitle({ title }) {
-  return <Text style={styles.sectionTitle}>{title}</Text>;
 }
 
 function FadeInRow({ children, delay = 0 }) {
@@ -236,6 +279,9 @@ function FaqItem({ question, answer }) {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
+  subHeader: { flexDirection: 'row', alignItems: 'center', paddingTop: spacing.lg + 20, paddingHorizontal: spacing.md, paddingBottom: spacing.md },
+  backBtn: { width: 40, height: 40, borderRadius: radius.md, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', marginRight: spacing.md },
+  subHeaderTitle: { ...typography.h1, fontSize: 20, color: colors.textPrimary },
   userCard: { alignItems: 'center', backgroundColor: colors.surface, margin: spacing.md, marginTop: spacing.lg + 20, borderRadius: radius.lg, padding: spacing.lg },
   avatar: { width: 72, height: 72, borderRadius: 36, backgroundColor: colors.primaryLight, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.sm },
   avatarLetter: { ...typography.h1, color: colors.primary },
@@ -251,7 +297,10 @@ const styles = StyleSheet.create({
   statDivider: { width: 1, backgroundColor: colors.border },
   withdrawBtn: { flexDirection: 'row', alignSelf: 'center', alignItems: 'center', backgroundColor: colors.primary, borderRadius: radius.pill, paddingVertical: 12, paddingHorizontal: 28, marginTop: spacing.md },
   withdrawText: { color: colors.white, ...typography.label, marginLeft: 8 },
-  sectionTitle: { ...typography.h2, fontSize: 16, color: colors.textPrimary, marginHorizontal: spacing.md, marginTop: spacing.xl, marginBottom: spacing.sm },
+  menuList: { backgroundColor: colors.surface, borderRadius: radius.lg, marginHorizontal: spacing.md, marginTop: spacing.lg },
+  menuRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 14, paddingHorizontal: spacing.md },
+  menuRowBorder: { borderBottomWidth: 1, borderBottomColor: colors.border },
+  menuRowLabel: { ...typography.label, color: colors.textPrimary, flex: 1, marginLeft: spacing.sm },
   subHeading: { ...typography.label, color: colors.textSecondary, marginHorizontal: spacing.md, marginTop: spacing.sm, marginBottom: spacing.xs },
   emptyText: { ...typography.small, color: colors.textMuted, marginHorizontal: spacing.md },
   txRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.sm, marginHorizontal: spacing.md, marginBottom: spacing.xs },
@@ -266,8 +315,6 @@ const styles = StyleSheet.create({
   faqHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   faqQuestion: { ...typography.label, color: colors.textPrimary, flex: 1, marginRight: spacing.sm },
   faqAnswer: { ...typography.small, color: colors.textSecondary, marginTop: spacing.sm, lineHeight: 19 },
-  contactBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderRadius: radius.md, marginHorizontal: spacing.md, padding: spacing.md },
-  contactBtnText: { ...typography.label, color: colors.textPrimary, flex: 1, marginLeft: spacing.sm },
   devBtn: { flexDirection: 'row', alignSelf: 'center', alignItems: 'center', marginTop: spacing.xl, padding: spacing.sm },
   devBtnText: { ...typography.small, color: colors.textMuted, marginLeft: 6, textDecorationLine: 'underline' },
 });
