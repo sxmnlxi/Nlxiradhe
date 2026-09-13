@@ -5,6 +5,7 @@ import { colors, spacing, radius, typography } from '../theme/colors';
 import { BANNERS, OFFERS } from '../data/offers';
 import { useUserData } from '../context/UserDataContext';
 import OfferDetailScreen from './OfferDetailScreen';
+import AnimatedCoin from '../components/AnimatedCoin';
 
 export default function HomeScreen({ navigation }) {
   const { coinBalance, offerStatuses } = useUserData();
@@ -31,7 +32,7 @@ export default function HomeScreen({ navigation }) {
         </TouchableOpacity>
         <Text style={styles.greeting}>Welcome back!</Text>
         <TouchableOpacity onPress={goToWallet} style={styles.coinBadge}>
-          <Ionicons name="logo-bitcoin" size={16} color={colors.gold} />
+          <AnimatedCoin size={16} />
           <Text style={styles.coinBadgeText}>{coinBalance.toFixed(2)}</Text>
         </TouchableOpacity>
       </View>
@@ -66,7 +67,7 @@ export default function HomeScreen({ navigation }) {
               {offer.isUnlimited && <Text style={styles.unlimitedTag}>Unlimited</Text>}
             </View>
             <View style={styles.rewardBox}>
-              <Ionicons name="logo-bitcoin" size={14} color={colors.gold} />
+              <AnimatedCoin size={14} />
               <Text style={styles.rewardText}>{offer.reward}</Text>
             </View>
           </TouchableOpacity>
