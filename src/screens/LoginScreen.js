@@ -26,7 +26,10 @@ export default function LoginScreen({ onLoginSuccess }) {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
 
-  const redirectUri = AuthSession.makeRedirectUri();
+  // Hardcoded to Expo's auth proxy (works for Snack/Expo Go testing).
+  // This exact URL must also be added in Google Cloud Console under
+  // your OAuth Client's Authorized redirect URIs.
+  const redirectUri = 'https://auth.expo.io/@sxsm/rewardapp';
 
   const [request, response, promptAsync] = AuthSession.useAuthRequest(
     {
@@ -110,11 +113,6 @@ export default function LoginScreen({ onLoginSuccess }) {
         One Google account per device is allowed for security.
       </Text>
 
-      <Text selectable style={styles.debug}>
-        Redirect URI (copy this into Google Cloud Console):{'\n'}
-        {redirectUri}
-      </Text>
-
       <Text style={styles.terms}>
         By continuing, you agree to our Terms of Service and Privacy Policy.
       </Text>
@@ -173,13 +171,6 @@ const styles = StyleSheet.create({
   note: {
     ...typography.small,
     color: darkColors.textMuted,
-    textAlign: 'center',
-    marginTop: spacing.lg,
-    paddingHorizontal: spacing.sm,
-  },
-  debug: {
-    ...typography.small,
-    color: darkColors.accent,
     textAlign: 'center',
     marginTop: spacing.lg,
     paddingHorizontal: spacing.sm,
