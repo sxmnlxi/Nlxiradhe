@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -11,6 +11,8 @@ import DeviceBlockedScreen from './src/screens/DeviceBlockedScreen';
 import ForgotPasswordScreen from './src/screens/ForgotPasswordScreen';
 import ResetPasswordScreen from './src/screens/ResetPasswordScreen';
 import { getDeviceId } from './src/utils/deviceId';
+import { UserDataProvider } from './src/context/UserDataContext';
+import { requestNotificationPermission } from './src/utils/notifications';
 
 export default function App() {
   const [stage, setStage] = useState('splash');
@@ -19,6 +21,12 @@ export default function App() {
   const [blockedEmail, setBlockedEmail] = useState(null);
 
   const getAccountKey = () => `account_${getDeviceId()}`;
+
+  useEffect(() => {
+    if (stage === 'app') {
+      requestNotificationPermission();
+    }
+  }, [stage]);
 
   const handleGoogleLoginSuccess = async (userInfo) => {
     setGoogleUser(userInfo);
@@ -45,7 +53,9 @@ export default function App() {
   const handleSignupComplete = async (profileData) => {
     const key = getAccountKey();
     const fullAccount = { ...googleUser, ...profileData, deviceId: getDeviceId() };
-    try { await AsyncStorage.setItem(key, JSON.stringify(fullAccount)); } catch (e) {}
+    try {
+      await AsyncStorage.setItem(key, JSON.stringify(fullAccount));
+    } catch (e) {}
     setAccount(fullAccount);
     setStage('app');
   };
@@ -96,16 +106,47 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <StatusBar style={stage === 'app' ? 'dark' : 'light'} />
-      {stage === 'splash' && <SplashScreen onFinish={() => setStage('onboarding')} />}
-      {stage === 'onboarding' && <OnboardingScreen onFinish={() => setStage('login')} />}
-      {stage === 'login' && (
-        <LoginScreen onLoginSuccess={handleGoogleLoginSuccess} onEmailLogin={handleEmailLogin} onForgotPassword={() => setStage('forgotPassword')} />
+
+      {stage === 'splash' && (
+        <SplashScreen onFinish={() => setStage('onboarding')} />
       )}
-      {stage === 'signup' && <SignupScreen googleUser={googleUser} onComplete={handleSignupComplete} />}
-      {stage === 'deviceBlocked' && <DeviceBlockedScreen registeredEmail={blockedEmail} />}
-      {stage === 'forgotPassword' && <ForgotPasswordScreen onVerify={handleForgotPasswordVerify} onBack={() => setStage('login')} />}
-      {stage === 'resetPassword' && <ResetPasswordScreen onReset={handleResetPassword} />}
-      {stage === 'app' && <AppNavigator />}
+
+      {stage === 'onboarding' && (
+        <OnboardingScreen onFinish={() => setStage('login')} />
+      )}
+
+      {stage === 'login' && (
+        <LoginScreen
+          onLoginSuccess={handleGoogleLoginSuccess}
+          onEmailLogin={handleEmailLogin}
+          onForgotPassword={() => setStage('forgotPassword')}
+        />
+      )}
+
+      {stage === 'signup' && (
+        <SignupScreen googleUser={googleUser} onComplete={handleSignupComplete} />
+      )}
+
+      {stage === 'deviceBlocked' && (
+        <DeviceBlockedScreen registeredEmail={blockedEmail} />
+      )}
+
+      {stage === 'forgotPassword' && (
+        <ForgotPasswordScreen
+          onVerify={handleForgotPasswordVerify}
+          onBack={() => setStage('login')}
+        />
+      )}
+
+      {stage === 'resetPassword' && (
+        <ResetPasswordScreen onReset={handleResetPassword} />
+      )}
+
+      {stage === 'app' && (
+        <UserDataProvider deviceId={getDeviceId()}>
+          <AppNavigator />
+        </UserDataProvider>
+      )}
     </SafeAreaProvider>
   );
-}
+        }
