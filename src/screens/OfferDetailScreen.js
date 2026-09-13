@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-nati
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, radius, typography } from '../theme/colors';
 import { useUserData } from '../context/UserDataContext';
+import AnimatedCoin from '../components/AnimatedCoin';
 
 export default function OfferDetailScreen({ offer, onBack, onStarted }) {
   const { startOffer, offerStatuses } = useUserData();
@@ -34,7 +35,7 @@ export default function OfferDetailScreen({ offer, onBack, onStarted }) {
 
         <View style={styles.rewardRow}>
           <View style={styles.rewardPill}>
-            <Ionicons name="logo-bitcoin" size={16} color={colors.gold} />
+            <AnimatedCoin size={16} />
             <Text style={styles.rewardText}>{offer.reward}.00</Text>
           </View>
           {entry && (
