@@ -1,6 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, Easing } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Animated, Text, StyleSheet, Easing } from 'react-native';
 import { colors } from '../theme/colors';
 
 export default function AnimatedCoin({ size = 16 }) {
@@ -18,8 +17,13 @@ export default function AnimatedCoin({ size = 16 }) {
   }, []);
 
   return (
-    <Animated.View style={{ transform: [{ scale }] }}>
-      <Ionicons name="logo-bitcoin" size={size} color={colors.gold} />
+    <Animated.View style={[styles.coin, { width: size, height: size, borderRadius: size / 2, transform: [{ scale }] }]}>
+      <Text style={[styles.symbol, { fontSize: size * 0.55 }]}>₹</Text>
     </Animated.View>
   );
 }
+
+const styles = StyleSheet.create({
+  coin: { backgroundColor: colors.gold, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#C9820A' },
+  symbol: { color: '#7A4E00', fontWeight: '800' },
+});
