@@ -26,9 +26,9 @@ function AnimatedTabIcon({ name, color, size, focused }) {
 
   useEffect(() => {
     Animated.spring(scale, {
-      toValue: focused ? 1.25 : 1,
-      friction: 4,
-      tension: 140,
+      toValue: focused ? 1.15 : 1,
+      friction: 6,
+      tension: 80,
       useNativeDriver: true,
     }).start();
   }, [focused]);
@@ -73,4 +73,4 @@ export default function AppNavigator() {
       </Tab.Navigator>
     </NavigationContainer>
   );
-}
+          }
