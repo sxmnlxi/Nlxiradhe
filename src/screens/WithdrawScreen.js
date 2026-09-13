@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Alert 
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, radius, typography } from '../theme/colors';
 import BalanceCard from '../components/BalanceCard';
+import AnimatedCoin from '../components/AnimatedCoin';
 import PayoutMethodCard from '../components/PayoutMethodCard';
 import { useUserData } from '../context/UserDataContext';
 
@@ -65,7 +66,7 @@ export default function WithdrawScreen({ navigation }) {
 
         <Text style={[styles.fieldLabel, { marginTop: spacing.md }]}>Amount</Text>
         <View style={styles.inputRow}>
-          <Ionicons name="logo-bitcoin" size={18} color={colors.primary} />
+          <AnimatedCoin size={18} />
           <TextInput style={styles.input} placeholder="0" placeholderTextColor={colors.textMuted} keyboardType="numeric" value={amount} onChangeText={setAmount} />
           <Text style={styles.suffix}>coins</Text>
         </View>
