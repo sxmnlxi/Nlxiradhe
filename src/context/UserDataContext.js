@@ -6,7 +6,9 @@ const UserDataContext = createContext(null);
 export function UserDataProvider({ deviceId, children }) {
   const [coinBalance, setCoinBalance] = useState(0);
   const [offerStatuses, setOfferStatuses] = useState({});
+  const [withdrawals, setWithdrawals] = useState([]);
   const [loaded, setLoaded] = useState(false);
+
   const storageKey = `userdata_${deviceId}`;
 
   useEffect(() => {
@@ -17,19 +19,22 @@ export function UserDataProvider({ deviceId, children }) {
           const parsed = JSON.parse(raw);
           setCoinBalance(parsed.coinBalance ?? 0);
           setOfferStatuses(parsed.offerStatuses ?? {});
+          setWithdrawals(parsed.withdrawals ?? []);
         }
       } catch (e) {} finally { setLoaded(true); }
     })();
   }, [deviceId]);
 
-  const persist = async (nextBalance, nextStatuses) => {
-    try { await AsyncStorage.setItem(storageKey, JSON.stringify({ coinBalance: nextBalance, offerStatuses: nextStatuses })); } catch (e) {}
+  const persist = async (nextBalance, nextStatuses, nextWithdrawals) => {
+    try {
+      await AsyncStorage.setItem(storageKey, JSON.stringify({ coinBalance: nextBalance, offerStatuses: nextStatuses, withdrawals: nextWithdrawals }));
+    } catch (e) {}
   };
 
   const startOffer = (offer) => {
     setOfferStatuses((prev) => {
       const next = { ...prev, [offer.id]: { status: 'pending', reward: offer.reward, name: offer.name } };
-      persist(coinBalance, next);
+      persist(coinBalance, next, withdrawals);
       return next;
     });
   };
@@ -41,23 +46,36 @@ export function UserDataProvider({ deviceId, children }) {
       const nextStatuses = { ...prevStatuses, [offerId]: { ...entry, status: 'completed' } };
       setCoinBalance((prevBalance) => {
         const nextBalance = prevBalance + entry.reward;
-        persist(nextBalance, nextStatuses);
+        persist(nextBalance, nextStatuses, withdrawals);
         return nextBalance;
       });
       return nextStatuses;
     });
   };
 
-  const withdraw = (amount) => {
-    setCoinBalance((prev) => {
-      const next = Math.max(0, prev - amount);
-      persist(next, offerStatuses);
-      return next;
+  const requestWithdrawal = (amount, method, details) => {
+    const record = { id: `${Date.now()}`, amount, method, details: details || null, status: 'pending', date: new Date().toISOString() };
+    setWithdrawals((prevWithdrawals) => {
+      const nextWithdrawals = [record, ...prevWithdrawals];
+      setCoinBalance((prevBalance) => {
+        const nextBalance = Math.max(0, prevBalance - amount);
+        persist(nextBalance, offerStatuses, nextWithdrawals);
+        return nextBalance;
+      });
+      return nextWithdrawals;
+    });
+  };
+
+  const completeWithdrawal = (id) => {
+    setWithdrawals((prevWithdrawals) => {
+      const nextWithdrawals = prevWithdrawals.map((w) => (w.id === id ? { ...w, status: 'successful' } : w));
+      persist(coinBalance, offerStatuses, nextWithdrawals);
+      return nextWithdrawals;
     });
   };
 
   return (
-    <UserDataContext.Provider value={{ coinBalance, offerStatuses, loaded, startOffer, completeOffer, withdraw }}>
+    <UserDataContext.Provider value={{ coinBalance, offerStatuses, withdrawals, loaded, startOffer, completeOffer, requestWithdrawal, completeWithdrawal }}>
       {children}
     </UserDataContext.Provider>
   );
