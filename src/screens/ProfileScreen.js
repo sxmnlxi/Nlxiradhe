@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -6,8 +6,15 @@ import { colors, spacing, radius, typography } from '../theme/colors';
 import WithdrawScreen from './WithdrawScreen';
 import { getDeviceId } from '../utils/deviceId';
 
-export default function ProfileScreen() {
+export default function ProfileScreen({ route, navigation }) {
   const [showWithdraw, setShowWithdraw] = useState(false);
+
+  useEffect(() => {
+    if (route?.params?.openWithdraw) {
+      setShowWithdraw(true);
+      navigation.setParams({ openWithdraw: undefined, ts: undefined });
+    }
+  }, [route?.params?.ts]);
 
   if (showWithdraw) {
     return <WithdrawScreen navigation={{ goBack: () => setShowWithdraw(false) }} />;
@@ -16,15 +23,15 @@ export default function ProfileScreen() {
   const handleResetTestAccount = () => {
     Alert.alert(
       'Reset test account?',
-      'This clears the locally-saved account for this device so you can go through Signup again. Only affects local testing — remove this button before a real release.',
+      'This clears the locally-saved account AND coin/offer data for this device. Only affects local testing — remove this button before a real release.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Reset',
-          style: 'destructive',
+          text: 'Reset', style: 'destructive',
           onPress: async () => {
-            const key = `account_${getDeviceId()}`;
-            await AsyncStorage.removeItem(key);
+            const deviceId = getDeviceId();
+            await AsyncStorage.removeItem(`account_${deviceId}`);
+            await AsyncStorage.removeItem(`userdata_${deviceId}`);
             Alert.alert('Done', 'Test account cleared. Close and reopen Expo Go to go through Login/Signup again.');
           },
         },
@@ -34,19 +41,14 @@ export default function ProfileScreen() {
 
   return (
     <View style={styles.screen}>
-      <View style={styles.avatar}>
-        <Text style={styles.avatarLetter}>F</Text>
-      </View>
+      <View style={styles.avatar}><Text style={styles.avatarLetter}>F</Text></View>
       <Text style={styles.name}>Hi, Friend</Text>
       <Text style={styles.subtitle}>Account, wallet & settings</Text>
-
       <TouchableOpacity style={styles.withdrawBtn} activeOpacity={0.85} onPress={() => setShowWithdraw(true)}>
         <Ionicons name="wallet-outline" size={18} color={colors.white} />
         <Text style={styles.withdrawText}>Withdraw</Text>
       </TouchableOpacity>
-
-      <Text style={styles.note}>Full profile (level, XP, activity stats, etc.) is next on the build list.</Text>
-
+      <Text style={styles.note}>Full profile (level, XP, activity stats, settings list) is next on the build list.</Text>
       <TouchableOpacity style={styles.devBtn} onPress={handleResetTestAccount}>
         <Ionicons name="refresh-outline" size={16} color={colors.textMuted} />
         <Text style={styles.devBtnText}>Reset test account (dev only)</Text>
