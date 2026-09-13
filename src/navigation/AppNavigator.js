@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
+import { Animated } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
@@ -20,6 +21,25 @@ const ICONS = {
   Profile: 'person',
 };
 
+function AnimatedTabIcon({ name, color, size, focused }) {
+  const scale = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    Animated.spring(scale, {
+      toValue: focused ? 1.25 : 1,
+      friction: 4,
+      tension: 140,
+      useNativeDriver: true,
+    }).start();
+  }, [focused]);
+
+  return (
+    <Animated.View style={{ transform: [{ scale }] }}>
+      <Ionicons name={name} size={size} color={color} />
+    </Animated.View>
+  );
+}
+
 export default function AppNavigator() {
   return (
     <NavigationContainer>
@@ -36,10 +56,11 @@ export default function AppNavigator() {
             paddingTop: 6,
           },
           tabBarIcon: ({ color, size, focused }) => (
-            <Ionicons
+            <AnimatedTabIcon
               name={`${ICONS[route.name]}${focused ? '' : '-outline'}`}
               size={size ?? 22}
               color={color}
+              focused={focused}
             />
           ),
         })}
@@ -52,4 +73,4 @@ export default function AppNavigator() {
       </Tab.Navigator>
     </NavigationContainer>
   );
-                }
+}
