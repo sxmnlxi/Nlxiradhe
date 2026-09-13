@@ -23,7 +23,7 @@
     "expo-application": "~7.0.8",
     "expo-auth-session": "*",
     "expo-web-browser": "*",
-    "expo-linking": "~8.0.12"
+    "expo-linking": "~8.0.12",
     "expo-constants": "~18.0.13"
   },
   "private": true
