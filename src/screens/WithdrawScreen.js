@@ -9,7 +9,7 @@ import { useUserData } from '../context/UserDataContext';
 const MIN_WITHDRAW = 100;
 
 export default function WithdrawScreen({ navigation }) {
-  const { coinBalance, withdraw } = useUserData();
+  const { coinBalance, requestWithdrawal } = useUserData();
   const [method, setMethod] = useState('upi');
   const [upiId, setUpiId] = useState('');
   const [amount, setAmount] = useState('');
@@ -22,9 +22,9 @@ export default function WithdrawScreen({ navigation }) {
       Alert.alert('Check details', `Minimum withdrawal is ${MIN_WITHDRAW} coins and amount can't exceed your balance.`);
       return;
     }
-    withdraw(numericAmount);
+    requestWithdrawal(numericAmount, method, method === 'upi' ? upiId : null);
     setAmount('');
-    Alert.alert('Withdrawal requested', `${numericAmount} coins via ${method.toUpperCase()}`);
+    Alert.alert('Withdrawal requested', `${numericAmount} coins via ${method.toUpperCase()}. Track its status in Profile → Withdrawal history.`);
   };
 
   return (
