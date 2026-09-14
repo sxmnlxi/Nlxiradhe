@@ -1,5 +1,6 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createStackNavigator } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
 
 import HomeScreen from '../screens/HomeScreen';
@@ -7,10 +8,16 @@ import OffersScreen from '../screens/OffersScreen';
 import ReferScreen from '../screens/ReferScreen';
 import WithdrawScreen from '../screens/WithdrawScreen';
 import ProfileScreen from '../screens/ProfileScreen';
+import EditProfileScreen from '../screens/EditProfileScreen';
+import WithdrawalHistoryScreen from '../screens/WithdrawalHistoryScreen';
+import TransactionHistoryScreen from '../screens/TransactionHistoryScreen';
+import LeaderboardScreen from '../screens/LeaderboardScreen';
+import ReferralStatusScreen from '../screens/ReferralStatusScreen';
 
 const Tab = createBottomTabNavigator();
+const Stack = createStackNavigator();
 
-export default function AppNavigator() {
+function MainTabNavigator() {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -42,5 +49,18 @@ export default function AppNavigator() {
       <Tab.Screen name="WithdrawTab" component={WithdrawScreen} options={{ title: 'Withdraw' }} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
+  );
+}
+
+export default function AppNavigator() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="MainTabs" component={MainTabNavigator} />
+      <Stack.Screen name="EditProfile" component={EditProfileScreen} />
+      <Stack.Screen name="WithdrawalHistory" component={WithdrawalHistoryScreen} />
+      <Stack.Screen name="TransactionHistory" component={TransactionHistoryScreen} />
+      <Stack.Screen name="Leaderboard" component={LeaderboardScreen} />
+      <Stack.Screen name="ReferralStatus" component={ReferralStatusScreen} />
+    </Stack.Navigator>
   );
 }
