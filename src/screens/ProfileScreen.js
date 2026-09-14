@@ -6,10 +6,9 @@ const { width } = Dimensions.get('window');
 
 export default function ProfileScreen({ navigation, route }) {
   const [refreshing, setRefreshing] = useState(false);
-  const [activeModal, setActiveModal] = useState(null); // Only for FAQs, Support, and Terms modals
+  const [activeModal, setActiveModal] = useState(null); // FAQs, Support, Terms modals
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const spinValue = useRef(new Animated.Value(0)).current;
   const bounceValue = useRef(new Animated.Value(1)).current;
 
   const leaderboardFaqs = [
@@ -26,25 +25,12 @@ export default function ProfileScreen({ navigation, route }) {
     }).start();
 
     Animated.loop(
-      Animated.timing(spinValue, {
-        toValue: 1,
-        duration: 3000,
-        useNativeDriver: true,
-      })
-    ).start();
-
-    Animated.loop(
       Animated.sequence([
         Animated.timing(bounceValue, { toValue: 1.15, duration: 600, useNativeDriver: true }),
         Animated.timing(bounceValue, { toValue: 1, duration: 600, useNativeDriver: true })
       ])
     ).start();
   }, []);
-
-  const spin = spinValue.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '360deg']
-  });
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -77,7 +63,7 @@ export default function ProfileScreen({ navigation, route }) {
             <View style={{ width: 36 }} />
           </View>
 
-          {/* User Info Card */}
+          {/* User Info Card with ₹ Rupee Coin Badge */}
           <View style={styles.profileCard}>
             <View style={styles.avatarLarge}>
               <Ionicons name="person" size={36} color="#FF3E86" />
@@ -85,16 +71,16 @@ export default function ProfileScreen({ navigation, route }) {
             <Text style={styles.profileName}>VERMA</Text>
             <Text style={styles.profileEmail}>verma.user@rewardapp.com</Text>
             <View style={styles.walletBadgeRow}>
-              <Animated.View style={{ transform: [{ rotate: spin }, { scale: bounceValue }], marginRight: 6 }}>
+              <Animated.View style={{ transform: [{ scale: bounceValue }], marginRight: 6 }}>
                 <View style={styles.roundCoinSmall}>
-                  <Ionicons name="logo-bitcoin" size={10} color="#1A1A1A" />
+                  <Text style={styles.rupeeSymbol}>₹</Text>
                 </View>
               </Animated.View>
               <Text style={styles.walletBadgeText}>Balance: 1,400 Coins</Text>
             </View>
           </View>
 
-          {/* Profile Menu Options - Navigating to separate screens */}
+          {/* Profile Menu Options opening separate pages */}
           <View style={styles.menuContainer}>
             <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('EditProfile')}>
               <View style={styles.menuIconBox}>
@@ -161,13 +147,8 @@ export default function ProfileScreen({ navigation, route }) {
         </ScrollView>
       </Animated.View>
 
-      {/* Modal for FAQs, Support, and Terms only */}
-      <Modal
-        visible={activeModal !== null}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setActiveModal(null)}
-      >
+      {/* Modals for FAQs, Support, Terms */}
+      <Modal visible={activeModal !== null} transparent={true} animationType="slide" onRequestClose={() => setActiveModal(null)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalTopRow}>
@@ -194,13 +175,8 @@ export default function ProfileScreen({ navigation, route }) {
 
             {activeModal === 'support' && (
               <View>
-                <Text style={styles.supportSubText}>
-                  Having any issues with your tasks or coin additions? Send us your query directly via email, and our team will assist you promptly.
-                </Text>
-                <TouchableOpacity 
-                  style={styles.emailButton}
-                  onPress={() => Linking.openURL('mailto:support@rewardapp.com?subject=User Support Request')}
-                >
+                <Text style={styles.supportSubText}>Having any issues with your tasks or coin additions? Send us your query directly via email.</Text>
+                <TouchableOpacity style={styles.emailButton} onPress={() => Linking.openURL('mailto:support@rewardapp.com')}>
                   <Ionicons name="mail" size={18} color="#FFFFFF" style={{ marginRight: 8 }} />
                   <Text style={styles.emailButtonText}>support@rewardapp.com</Text>
                 </TouchableOpacity>
@@ -210,13 +186,7 @@ export default function ProfileScreen({ navigation, route }) {
             {activeModal === 'terms' && (
               <ScrollView showsVerticalScrollIndicator={false}>
                 <Text style={styles.termsText}>
-                  Welcome to our platform. Please read these terms carefully before using our services:
-                  {'\n\n'}
-                  • <Text style={{ fontWeight: 'bold' }}>No Cashback Guarantee:</Text> We do not guarantee any fixed cashback or rewards as payouts depend entirely on successful offer completion verified by third-party partner networks.
-                  {'\n\n'}
-                  • <Text style={{ fontWeight: 'bold' }}>No Gambling Promotion:</Text> This application is strictly a safe task-completion and rewarded engagement app. We do not promote, host, or encourage any form of online gambling or betting activities.
-                  {'\n\n'}
-                  • <Text style={{ fontWeight: 'bold' }}>Safe Earning Environment:</Text> All task verifications are audited to maintain a secure ecosystem. Fraudulent attempts or use of multiple device accounts will result in instant account suspension.
+                  Welcome to our platform. Payouts depend entirely on successful offer verification by partner networks. Automated bot usage is strictly prohibited.
                 </Text>
               </ScrollView>
             )}
@@ -240,6 +210,7 @@ const styles = StyleSheet.create({
   profileEmail: { fontSize: 12, color: '#666666', marginBottom: 12 },
   walletBadgeRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF8E1', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, borderWidth: 1, borderColor: '#FFE0B2' },
   roundCoinSmall: { width: 18, height: 18, borderRadius: 9, backgroundColor: '#FFD700', justifyContent: 'center', alignItems: 'center' },
+  rupeeSymbol: { fontSize: 11, fontWeight: '900', color: '#1A1A1A' },
   walletBadgeText: { fontSize: 13, fontWeight: 'bold', color: '#D84315' },
   menuContainer: { backgroundColor: '#FFFFFF', borderRadius: 20, paddingVertical: 8, paddingHorizontal: 16, marginBottom: 24, borderWidth: 1, borderColor: '#FFE4E1', elevation: 2 },
   menuItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#F8F9FA' },
@@ -259,3 +230,4 @@ const styles = StyleSheet.create({
   emailButtonText: { color: '#FFFFFF', fontWeight: 'bold', fontSize: 14 },
   termsText: { fontSize: 13, color: '#666666', lineHeight: 20 },
 });
+      
