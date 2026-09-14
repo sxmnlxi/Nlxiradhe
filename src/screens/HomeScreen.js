@@ -1,10 +1,3 @@
-Here is the fully updated code for your HomeScreen.js file.
-I have made all the changes you requested:
- * ₹ Symbol: Replaced the Bitcoin icon with a bold ₹ symbol inside all the yellow coins.
- * Lowered Header: Added significantly more paddingTop to the main scroll view so the profile and coin balance are pushed down safely away from the notification bar.
- * Offer Status Redirection: The "Offer Status" button now has onPress={() => navigation.navigate('My Offers')} to take users to the pending status tab.
- * Ultra Animated & Bouncy: Added a staggered bouncy spring animation when the offer cards load, made the gift icon pulse continuously, kept the spinning/bouncing coin, and made the whole screen feel much more alive.
-Copy and paste this entire code into your src/screens/HomeScreen.js file:
 import React, { useState, useEffect, useRef } from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, SafeAreaView, RefreshControl, Dimensions, Animated, Modal, Linking, Easing } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
