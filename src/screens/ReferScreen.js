@@ -4,10 +4,6 @@ import { Ionicons } from '@expo/vector-icons';
 
 export default function ReferScreen({ navigation }) {
   const [referralCode] = useState('VERMA500');
-  const [referralsList] = useState([
-    { id: '1', name: 'Aarav Sharma', status: 'Verified (Earned 500 Coins)', date: 'Aug 21, 2026' },
-    { id: '2', name: 'Priya Verma', status: 'Pending KYC', date: 'Aug 24, 2026' },
-  ]);
 
   // Animations: Full screen fade-in and bouncing coin icon
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -71,22 +67,6 @@ export default function ReferScreen({ navigation }) {
               <Text style={styles.shareText}>Share Invite Link</Text>
             </TouchableOpacity>
           </View>
-
-          {/* Referral Status Section */}
-          <Text style={styles.sectionTitle}>Your Referral Status</Text>
-          {(referralsList || []).map((item) => (
-            <View key={item.id} style={styles.historyCard}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.historyTitle}>{item.name}</Text>
-                <Text style={styles.historyDate}>{item.date}</Text>
-              </View>
-              <View style={{ alignItems: 'flex-end' }}>
-                <Text style={[styles.historyStatus, { color: item.status.includes('Verified') ? '#27ae60' : '#e67e22' }]}>
-                  {item.status}
-                </Text>
-              </View>
-            </View>
-          ))}
         </ScrollView>
       </Animated.View>
     </SafeAreaView>
@@ -106,7 +86,7 @@ const styles = StyleSheet.create({
     alignItems: 'center', 
     justifyContent: 'space-between', 
     paddingHorizontal: 16, 
-    paddingTop: 28, // Prevents notification bar collision
+    paddingTop: 28, 
     paddingBottom: 12,
   },
   backButton: { 
@@ -194,38 +174,6 @@ const styles = StyleSheet.create({
     color: '#FFFFFF', 
     fontWeight: 'bold', 
     fontSize: 14 
-  },
-  sectionTitle: { 
-    fontSize: 16, 
-    fontWeight: 'bold', 
-    color: '#1A1A1A', 
-    marginBottom: 12 
-  },
-  historyCard: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    alignItems: 'center', 
-    backgroundColor: '#FFFFFF', 
-    padding: 16, 
-    borderRadius: 16, 
-    marginBottom: 12, 
-    borderWidth: 1, 
-    borderColor: '#FFE4E1', 
-    elevation: 2 
-  },
-  historyTitle: { 
-    fontSize: 13, 
-    fontWeight: 'bold', 
-    color: '#1A1A1A', 
-    marginBottom: 2 
-  },
-  historyDate: { 
-    fontSize: 11, 
-    color: '#666666' 
-  },
-  historyStatus: { 
-    fontSize: 11, 
-    fontWeight: 'bold' 
   },
 });
   
