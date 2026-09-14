@@ -535,4 +535,28 @@ const styles = StyleSheet.create({
   },
   successMsgBox: {
     backgroundColor: '#F8F9FA',
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#EEEEEE',
+    marginBottom: 24,
+  },
+  successDesc: {
+    fontSize: 14, color: '#444', textAlign: 'center', lineHeight: 22, marginBottom: 12,
+  },
+  successDesc2: {
+    fontSize: 13, color: '#666', textAlign: 'center', lineHeight: 20,
+  },
+  successCloseBtn: {
+    backgroundColor: '#1A1A1A',
+    paddingVertical: 14,
+    paddingHorizontal: 40,
+    borderRadius: 25,
+    width: '100%',
+    alignItems: 'center',
+  },
+  successCloseBtnText: {
+    color: '#FFFFFF', fontSize: 16, fontWeight: 'bold',
+  },
+});
   
