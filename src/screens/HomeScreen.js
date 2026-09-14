@@ -1,14 +1,19 @@
+Here is the fully updated code for your HomeScreen.js file.
+I have made all the changes you requested:
+ * ₹ Symbol: Replaced the Bitcoin icon with a bold ₹ symbol inside all the yellow coins.
+ * Lowered Header: Added significantly more paddingTop to the main scroll view so the profile and coin balance are pushed down safely away from the notification bar.
+ * Offer Status Redirection: The "Offer Status" button now has onPress={() => navigation.navigate('My Offers')} to take users to the pending status tab.
+ * Ultra Animated & Bouncy: Added a staggered bouncy spring animation when the offer cards load, made the gift icon pulse continuously, kept the spinning/bouncing coin, and made the whole screen feel much more alive.
+Copy and paste this entire code into your src/screens/HomeScreen.js file:
 import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, SafeAreaView, RefreshControl, Dimensions, Animated, Modal, Linking } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, SafeAreaView, RefreshControl, Dimensions, Animated, Modal, Linking, Easing } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 const { width } = Dimensions.get('window');
 
 export default function HomeScreen({ navigation }) {
-  // Strict White-Pink Theme palette as requested
   const [balance, setBalance] = useState('3.10');
   
-  // Detailed offers data with backend integration fields (description, steps, redirectUrl)
   const [offers, setOffers] = useState([
     { 
       id: '1', 
@@ -63,10 +68,14 @@ export default function HomeScreen({ navigation }) {
   const bannerScrollRef = useRef(null);
   const [activeBannerIndex, setActiveBannerIndex] = useState(0);
 
-  // Animated values for full-screen fade entrance and continuous bouncing/spinning coin
+  // --- Animation Values ---
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const spinValue = useRef(new Animated.Value(0)).current;
   const bounceValue = useRef(new Animated.Value(1)).current;
+  const pulseValue = useRef(new Animated.Value(1)).current;
+  
+  // Staggered animation for offer cards
+  const cardAnims = useRef(offers.map(() => new Animated.Value(0))).current;
 
   const banners = [
     { id: '1', title: 'More Coins = Bigger Rewards!', subtitle: 'WIN REWARDS on Qureka Gamez', icon: 'flash', linkText: 'WIN REWARDS' },
@@ -75,31 +84,50 @@ export default function HomeScreen({ navigation }) {
   ];
 
   useEffect(() => {
-    // Full screen smooth entrance animation
+    // 1. Fade in the whole screen
     Animated.timing(fadeAnim, {
       toValue: 1,
-      duration: 500,
+      duration: 600,
       useNativeDriver: true,
     }).start();
 
-    // Continuous 360-degree rotating coin animation
+    // 2. Staggered bouncy entrance for the offer cards
+    Animated.stagger(150, cardAnims.map(anim => 
+      Animated.spring(anim, {
+        toValue: 1,
+        friction: 5,
+        tension: 50,
+        useNativeDriver: true,
+      })
+    )).start();
+
+    // 3. Continuous 360-degree rotating coin animation
     Animated.loop(
       Animated.timing(spinValue, {
         toValue: 1,
-        duration: 3000,
+        duration: 3500,
+        easing: Easing.linear,
         useNativeDriver: true,
       })
     ).start();
 
-    // Bouncing effect for coin icons across the screen
+    // 4. Bouncing effect for coins
     Animated.loop(
       Animated.sequence([
-        Animated.timing(bounceValue, { toValue: 1.18, duration: 600, useNativeDriver: true }),
-        Animated.timing(bounceValue, { toValue: 1, duration: 600, useNativeDriver: true })
+        Animated.timing(bounceValue, { toValue: 1.2, duration: 500, useNativeDriver: true }),
+        Animated.timing(bounceValue, { toValue: 1, duration: 500, useNativeDriver: true })
       ])
     ).start();
 
-    // Auto-sliding banner timer that smoothly cycles
+    // 5. Pulsing effect for the gift icon
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseValue, { toValue: 1.1, duration: 800, useNativeDriver: true }),
+        Animated.timing(pulseValue, { toValue: 1, duration: 800, useNativeDriver: true })
+      ])
+    ).start();
+
+    // 6. Auto-sliding banner
     const timer = setInterval(() => {
       setActiveBannerIndex((prevIndex) => {
         const nextIndex = (prevIndex + 1) % banners.length;
@@ -119,17 +147,19 @@ export default function HomeScreen({ navigation }) {
 
   const onRefresh = () => {
     setRefreshing(true);
+    // Retrigger card bouncy animations on refresh
+    cardAnims.forEach(anim => anim.setValue(0));
     setTimeout(() => {
       setRefreshing(false);
+      Animated.stagger(150, cardAnims.map(anim => 
+        Animated.spring(anim, {
+          toValue: 1,
+          friction: 5,
+          tension: 50,
+          useNativeDriver: true,
+        })
+      )).start();
     }, 1000);
-  };
-
-  // Strict White-Pink theme styles
-  const currentStyles = {
-    container: { backgroundColor: '#FFF0F5' },
-    textMain: { color: '#1A1A1A' },
-    textSub: { color: '#666666' },
-    cardBg: { backgroundColor: '#FFFFFF', borderColor: '#FFE4E1' },
   };
 
   const handleStartOffer = (url) => {
@@ -140,14 +170,14 @@ export default function HomeScreen({ navigation }) {
   };
 
   return (
-    <SafeAreaView style={[styles.container, currentStyles.container]}>
+    <SafeAreaView style={styles.container}>
       <Animated.View style={[styles.fullScreenAnimatedContainer, { opacity: fadeAnim }]}>
         <ScrollView 
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#FF3E86" />}
         >
-          {/* Top Header with safe top padding to prevent notification bar collision & working profile navigation */}
+          {/* Header lowered via paddingTop in scrollContent */}
           <View style={styles.header}>
             <TouchableOpacity 
               style={styles.headerLeft} 
@@ -158,24 +188,26 @@ export default function HomeScreen({ navigation }) {
                 <Ionicons name="paw" size={26} color="#FF3E86" />
               </View>
               <View>
-                <Text style={[styles.welcomeSubText, currentStyles.textSub]}>Welcome back,</Text>
-                <Text style={[styles.welcomeTitle, currentStyles.textMain]}>VERMA</Text>
+                <Text style={styles.welcomeSubText}>Welcome back,</Text>
+                <Text style={styles.welcomeTitle}>VERMA</Text>
               </View>
             </TouchableOpacity>
 
             <View style={styles.topRightPills}>
-              <TouchableOpacity style={styles.iconButtonLarge}>
-                <Ionicons name="gift" size={20} color="#ff4757" />
-              </TouchableOpacity>
+              <Animated.View style={{ transform: [{ scale: pulseValue }] }}>
+                <TouchableOpacity style={styles.iconButtonLarge}>
+                  <Ionicons name="gift" size={20} color="#ff4757" />
+                </TouchableOpacity>
+              </Animated.View>
               
-              {/* Bouncing Animated Coin Pill */}
+              {/* Bouncing Animated Rupee Coin Pill */}
               <View style={styles.coinPillLarge}>
                 <Animated.View style={{ transform: [{ rotate: spin }, { scale: bounceValue }] }}>
                   <View style={styles.roundCoinCircle}>
-                    <Ionicons name="logo-bitcoin" size={14} color="#1A1A1A" />
+                    <Text style={styles.rupeeIconLarge}>₹</Text>
                   </View>
                 </Animated.View>
-                <Text style={[styles.coinPillText, currentStyles.textMain]}>{balance}</Text>
+                <Text style={styles.coinPillText}>{balance}</Text>
               </View>
             </View>
           </View>
@@ -216,41 +248,60 @@ export default function HomeScreen({ navigation }) {
 
           {/* Offers Wall Header & Status */}
           <View style={styles.sectionHeaderRow}>
-            <Text style={[styles.sectionTitle, currentStyles.textMain]}>Offers Wall</Text>
-            <TouchableOpacity style={styles.offerStatusButton}>
+            <Text style={styles.sectionTitle}>Offers Wall</Text>
+            {/* Navigates to 'My Offers' */}
+            <TouchableOpacity 
+              style={styles.offerStatusButton}
+              onPress={() => navigation.navigate('My Offers')}
+            >
               <Ionicons name="time-outline" size={15} color="#FFFFFF" style={{ marginRight: 4 }} />
               <Text style={styles.offerStatusText}>Offer Status</Text>
             </TouchableOpacity>
           </View>
 
-          {/* Offer Cards with Yellow Bouncing Coins */}
+          {/* Ultra Animated Offer Cards with Yellow Rupee Coins */}
           <View style={styles.offersContainer}>
-            {(offers || []).map((item) => (
-              <TouchableOpacity 
-                key={item.id} 
-                style={[styles.offerCard, currentStyles.cardBg]}
-                onPress={() => setSelectedOffer(item)}
-                activeOpacity={0.8}
-              >
-                <View style={styles.offerLeft}>
-                  <View style={styles.offerIconBox}>
-                    <Ionicons name={item.icon} size={22} color="#FF3E86" />
-                  </View>
-                  <View style={{ flex: 1, paddingRight: 8 }}>
-                    <Text style={[styles.offerTitle, currentStyles.textMain]} numberOfLines={1}>{item.title}</Text>
-                    <Text style={[styles.offerCategory, currentStyles.textSub]}>{item.category}</Text>
-                  </View>
-                </View>
-                <View style={styles.rewardBadge}>
-                  <Animated.View style={{ transform: [{ scale: bounceValue }], marginRight: 4 }}>
-                    <View style={styles.roundCoinSmall}>
-                      <Ionicons name="logo-bitcoin" size={10} color="#1A1A1A" />
+            {(offers || []).map((item, index) => {
+              const animScale = cardAnims[index].interpolate({
+                inputRange: [0, 1],
+                outputRange: [0.8, 1]
+              });
+              const animTranslate = cardAnims[index].interpolate({
+                inputRange: [0, 1],
+                outputRange: [30, 0]
+              });
+
+              return (
+                <Animated.View 
+                  key={item.id} 
+                  style={{ transform: [{ scale: animScale }, { translateY: animTranslate }] }}
+                >
+                  <TouchableOpacity 
+                    style={styles.offerCard}
+                    onPress={() => setSelectedOffer(item)}
+                    activeOpacity={0.8}
+                  >
+                    <View style={styles.offerLeft}>
+                      <View style={styles.offerIconBox}>
+                        <Ionicons name={item.icon} size={22} color="#FF3E86" />
+                      </View>
+                      <View style={{ flex: 1, paddingRight: 8 }}>
+                        <Text style={styles.offerTitle} numberOfLines={1}>{item.title}</Text>
+                        <Text style={styles.offerCategory}>{item.category}</Text>
+                      </View>
                     </View>
-                  </Animated.View>
-                  <Text style={styles.rewardTextYellow}>+{item.reward}</Text>
-                </View>
-              </TouchableOpacity>
-            ))}
+                    <View style={styles.rewardBadge}>
+                      <Animated.View style={{ transform: [{ scale: bounceValue }], marginRight: 4 }}>
+                        <View style={styles.roundCoinSmall}>
+                          <Text style={styles.rupeeIconSmall}>₹</Text>
+                        </View>
+                      </Animated.View>
+                      <Text style={styles.rewardTextYellow}>+{item.reward}</Text>
+                    </View>
+                  </TouchableOpacity>
+                </Animated.View>
+              );
+            })}
           </View>
         </ScrollView>
       </Animated.View>
@@ -264,7 +315,6 @@ export default function HomeScreen({ navigation }) {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            {/* Top Back / Close Header */}
             <View style={styles.modalTopRow}>
               <TouchableOpacity onPress={() => setSelectedOffer(null)} style={styles.modalBackButton}>
                 <Ionicons name="arrow-back" size={20} color="#1A1A1A" />
@@ -274,7 +324,6 @@ export default function HomeScreen({ navigation }) {
               </TouchableOpacity>
             </View>
 
-            {/* Blue Banner Header inside Modal */}
             <View style={styles.modalBlueCard}>
               <View style={styles.modalBannerCircle}>
                 <Ionicons name={selectedOffer?.icon || 'trending-up'} size={32} color="#0052FF" />
@@ -283,12 +332,11 @@ export default function HomeScreen({ navigation }) {
               <Text style={styles.modalBannerSub}>Complete the steps and earn your reward</Text>
             </View>
 
-            {/* Reward Summary Pill */}
             <View style={styles.modalRewardCard}>
               <View style={styles.modalRewardLeft}>
                 <Animated.View style={{ transform: [{ scale: bounceValue }], marginRight: 6 }}>
                   <View style={styles.roundCoinMedium}>
-                    <Ionicons name="logo-bitcoin" size={12} color="#1A1A1A" />
+                    <Text style={styles.rupeeIconMedium}>₹</Text>
                   </View>
                 </Animated.View>
                 <Text style={styles.modalRewardAmountText}>{selectedOffer?.reward} coins</Text>
@@ -299,13 +347,11 @@ export default function HomeScreen({ navigation }) {
               </View>
             </View>
 
-            {/* About Section */}
             <Text style={styles.modalSectionHeading}>About this offer</Text>
             <Text style={styles.modalDescriptionText}>
               {selectedOffer?.description}
             </Text>
 
-            {/* Offer Steps */}
             <Text style={styles.modalSectionHeading}>Offer steps</Text>
             {(selectedOffer?.steps || []).map((step, idx) => (
               <View key={idx} style={styles.modalStepRow}>
@@ -316,7 +362,6 @@ export default function HomeScreen({ navigation }) {
               </View>
             ))}
 
-            {/* Start Offer Button Redirection */}
             <TouchableOpacity 
               style={styles.modalStartButton}
               onPress={() => handleStartOffer(selectedOffer?.redirectUrl)}
@@ -334,13 +379,14 @@ export default function HomeScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#FFF0F5',
   },
   fullScreenAnimatedContainer: {
     flex: 1,
   },
   scrollContent: {
     padding: 16,
-    paddingTop: 24, // Prevents notification bar overlap
+    paddingTop: 55, // Increased significantly to push elements fully down
     paddingBottom: 40,
   },
   header: {
@@ -364,10 +410,12 @@ const styles = StyleSheet.create({
   },
   welcomeSubText: {
     fontSize: 11,
+    color: '#666666',
   },
   welcomeTitle: {
     fontSize: 17,
     fontWeight: 'bold',
+    color: '#1A1A1A',
   },
   topRightPills: {
     flexDirection: 'row',
@@ -421,10 +469,34 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  roundCoinMedium: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#FFD700',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  rupeeIconLarge: {
+    fontSize: 14,
+    fontWeight: '900',
+    color: '#1A1A1A',
+  },
+  rupeeIconMedium: {
+    fontSize: 13,
+    fontWeight: '900',
+    color: '#1A1A1A',
+  },
+  rupeeIconSmall: {
+    fontSize: 11,
+    fontWeight: '900',
+    color: '#1A1A1A',
+  },
   coinPillText: {
     marginLeft: 6,
     fontWeight: 'bold',
     fontSize: 14,
+    color: '#1A1A1A',
   },
   posterContainer: {
     marginBottom: 20,
@@ -501,6 +573,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
+    color: '#1A1A1A',
   },
   offerStatusButton: {
     flexDirection: 'row',
@@ -527,10 +600,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    backgroundColor: '#FFFFFF',
     padding: 14,
     borderRadius: 16,
     marginBottom: 12,
     borderWidth: 1,
+    borderColor: '#FFE4E1',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
@@ -555,9 +630,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: 'bold',
     marginBottom: 2,
+    color: '#1A1A1A',
   },
   offerCategory: {
     fontSize: 11,
+    color: '#666666',
   },
   rewardBadge: {
     flexDirection: 'row',
@@ -647,14 +724,6 @@ const styles = StyleSheet.create({
   },
   modalRewardLeft: {
     flexDirection: 'row',
-    alignItems: 'center',
-  },
-  roundCoinMedium: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: '#FFD700',
-    justifyContent: 'center',
     alignItems: 'center',
   },
   modalRewardAmountText: {
