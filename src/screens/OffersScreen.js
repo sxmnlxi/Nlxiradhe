@@ -27,12 +27,16 @@ const FILTERS = [
 
 export default function OffersScreen() {
   const {
-    offerStatuses,
-    offers,
-    offersLoading,
-    offersError,
-    refreshOffers,
-  } = useUserData();
+  offerStatuses = {},
+  offers = [],
+  offersLoading = false,
+  offersError = null,
+  refreshOffers = () => {},
+} = useUserData();
+
+const safeOffers = Array.isArray(offers) && offers.length > 0
+  ? offers
+  : DEMO_OFFERS;
 
   const [selectedOffer, setSelectedOffer] = useState(null);
   const [filter, setFilter] = useState('all');
