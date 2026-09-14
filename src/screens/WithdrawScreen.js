@@ -1,575 +1,538 @@
-import React, { useEffect, useRef, useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TextInput,
-  TouchableOpacity,
-  Alert,
-  Animated,
+import React, { useState, useEffect, useRef } from 'react';
+import { 
+  StyleSheet, Text, View, ScrollView, TouchableOpacity, SafeAreaView, 
+  Animated, Dimensions, Easing, TextInput, Modal, UIManager, Platform, LayoutAnimation 
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, spacing, radius, typography } from '../theme/colors';
-import BalanceCard from '../components/BalanceCard';
-import AnimatedCoin from '../components/AnimatedCoin';
-import PayoutMethodCard from '../components/PayoutMethodCard';
-import { useUserData } from '../context/UserDataContext';
 
-const MIN_WITHDRAW = 100;
+const { width } = Dimensions.get('window');
 
-export default function WithdrawScreen({ navigation }) {
-  const { coinBalance, requestWithdrawal } = useUserData();
+// Enable LayoutAnimation for Android to make the form expansion smooth
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
-  const [method, setMethod] = useState('upi');
-  const [upiId, setUpiId] = useState('');
+export default function WithdrawScreen() {
+  const [balance, setBalance] = useState('350.00'); // Mock balance
+  const [selectedMethod, setSelectedMethod] = useState(null);
   const [amount, setAmount] = useState('');
+  
+  // Form States
+  const [upiDetails, setUpiDetails] = useState({ upiId: '', name: '' });
+  const [bankDetails, setBankDetails] = useState({ accNo: '', payeeName: '', ifsc: '', bankName: '' });
+  
+  const [showSuccess, setShowSuccess] = useState(false);
 
-  const buttonScale = useRef(new Animated.Value(1)).current;
-  const buttonGlow = useRef(new Animated.Value(0)).current;
+  const withdrawMethods = [
+    { id: 'upi', name: 'UPI Transfer', icon: 'phone-portrait', color: '#FF7A00', subtitle: 'Instant transfer to UPI ID' },
+    { id: 'bank', name: 'Bank Transfer', icon: 'business', color: '#0052FF', subtitle: 'Direct to Bank Account' },
+  ];
 
-  const numericAmount = Number(amount) || 0;
-  const hasValidUpi = upiId.trim().length > 3;
-  const isAboveMinimum = numericAmount > MIN_WITHDRAW;
-  const hasEnoughBalance = numericAmount <= coinBalance;
-
-  const canWithdraw =
-    isAboveMinimum &&
-    hasEnoughBalance &&
-    (method === 'bank' || hasValidUpi);
+  // --- Ultra Animation Values ---
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const bounceValue = useRef(new Animated.Value(1)).current;
+  const pulseValue = useRef(new Animated.Value(1)).current;
+  const floatValue = useRef(new Animated.Value(0)).current;
+  const successScale = useRef(new Animated.Value(0)).current;
+  
+  const cardAnims = useRef(withdrawMethods.map(() => new Animated.Value(0))).current;
 
   useEffect(() => {
-    if (!canWithdraw) {
-      buttonScale.setValue(1);
-      buttonGlow.setValue(0);
-      return undefined;
-    }
+    // 1. Fade in the whole screen
+    Animated.timing(fadeAnim, { toValue: 1, duration: 600, useNativeDriver: true }).start();
 
-    const animation = Animated.loop(
-      Animated.parallel([
-        Animated.sequence([
-          Animated.timing(buttonScale, {
-            toValue: 1.025,
-            duration: 700,
-            useNativeDriver: true,
-          }),
-          Animated.timing(buttonScale, {
-            toValue: 1,
-            duration: 700,
-            useNativeDriver: true,
-          }),
-        ]),
-        Animated.sequence([
-          Animated.timing(buttonGlow, {
-            toValue: 1,
-            duration: 700,
-            useNativeDriver: false,
-          }),
-          Animated.timing(buttonGlow, {
-            toValue: 0,
-            duration: 700,
-            useNativeDriver: false,
-          }),
-        ]),
+    // 2. Staggered bouncy entrance for payment methods
+    Animated.stagger(200, cardAnims.map(anim => 
+      Animated.spring(anim, { toValue: 1, friction: 4, tension: 40, useNativeDriver: true })
+    )).start();
+
+    // 3. Continuous Bouncing for Coins
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(bounceValue, { toValue: 1.25, duration: 500, useNativeDriver: true }),
+        Animated.timing(bounceValue, { toValue: 1, duration: 500, useNativeDriver: true })
       ])
-    );
+    ).start();
 
-    animation.start();
+    // 4. Continuous Pulsing for Main CTA Button
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseValue, { toValue: 1.03, duration: 800, useNativeDriver: true }),
+        Animated.timing(pulseValue, { toValue: 1, duration: 800, useNativeDriver: true })
+      ])
+    ).start();
 
-    return () => animation.stop();
-  }, [buttonGlow, buttonScale, canWithdraw]);
+    // 5. Floating background elements
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(floatValue, { toValue: 10, duration: 2000, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+        Animated.timing(floatValue, { toValue: 0, duration: 2000, easing: Easing.inOut(Easing.ease), useNativeDriver: true })
+      ])
+    ).start();
 
-  const getWithdrawMessage = () => {
-    if (!amount || numericAmount <= 0) {
-      return `Enter more than ${MIN_WITHDRAW} coins`;
-    }
+  }, []);
 
-    if (!isAboveMinimum) {
-      return `Minimum is more than ${MIN_WITHDRAW} coins`;
-    }
-
-    if (!hasEnoughBalance) {
-      return 'Amount is higher than your balance';
-    }
-
-    if (method === 'upi' && !hasValidUpi) {
-      return 'Enter a valid UPI ID';
-    }
-
-    return `Withdraw ${numericAmount} coins`;
+  const handleMethodSelect = (id) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setSelectedMethod(selectedMethod === id ? null : id);
   };
 
-  const getWithdrawSubtitle = () => {
-    if (canWithdraw) {
-      return method === 'upi'
-        ? `Send to ${upiId.trim()}`
-        : 'Send to your saved bank account';
+  const isFormValid = () => {
+    const amt = parseFloat(amount);
+    if (isNaN(amt) || amt < 50) return false;
+    
+    if (selectedMethod === 'upi') {
+      return upiDetails.upiId.length > 3 && upiDetails.name.length > 2;
     }
-
-    return `Available: ${Number(coinBalance || 0).toFixed(2)} coins`;
+    if (selectedMethod === 'bank') {
+      return bankDetails.accNo.length > 5 && bankDetails.payeeName.length > 2 && bankDetails.ifsc.length > 4 && bankDetails.bankName.length > 2;
+    }
+    return false;
   };
 
-  const handleWithdraw = () => {
-    if (!canWithdraw) {
-      Alert.alert(
-        'Withdrawal unavailable',
-        'Enter an amount greater than 100 coins, ensure it is within your available balance, and add a valid payout method.'
-      );
-      return;
-    }
-
-    requestWithdrawal(
-      numericAmount,
-      method,
-      method === 'upi' ? upiId.trim() : null
-    );
-
-    setAmount('');
-
-    Alert.alert(
-      'Withdrawal requested',
-      `${numericAmount} coins will be sent to your ${
-        method === 'upi' ? 'UPI ID' : 'bank account'
-      }. You can track the request in Profile → Withdrawal history.`
-    );
+  const handleSubmit = () => {
+    if (!isFormValid()) return;
+    
+    // Animate Success Modal Pop-up
+    setShowSuccess(true);
+    Animated.spring(successScale, {
+      toValue: 1,
+      friction: 5,
+      tension: 40,
+      useNativeDriver: true,
+    }).start();
   };
 
-  const setQuickAmount = (value) => {
-    if (value <= coinBalance) {
-      setAmount(String(value));
-      return;
-    }
-
-    setAmount(String(Math.floor(coinBalance)));
+  const closeSuccess = () => {
+    Animated.timing(successScale, {
+      toValue: 0,
+      duration: 200,
+      useNativeDriver: true,
+    }).start(() => {
+      setShowSuccess(false);
+      setSelectedMethod(null);
+      setAmount('');
+      setUpiDetails({ upiId: '', name: '' });
+      setBankDetails({ accNo: '', payeeName: '', ifsc: '', bankName: '' });
+    });
   };
-
-  const glowColor = buttonGlow.interpolate({
-    inputRange: [0, 1],
-    outputRange: [colors.primary, colors.accent],
-  });
 
   return (
-    <ScrollView
-      style={styles.screen}
-      contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={false}
-    >
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => navigation?.goBack?.()}
-          style={styles.backBtn}
-          activeOpacity={0.8}
-        >
-          <Ionicons
-            name="chevron-back"
-            size={22}
-            color={colors.textPrimary}
-          />
-        </TouchableOpacity>
-
-        <View>
-          <Text style={styles.headerTitle}>Withdraw coins</Text>
-          <Text style={styles.headerSubtitle}>
-            UPI in minutes · Bank in 1–2 hours
-          </Text>
-        </View>
-      </View>
-
-      <BalanceCard
-        balance={coinBalance}
-        note="1 coin = ₹1 · paid directly to UPI or bank"
-      />
-
-      <View style={styles.minimumNotice}>
-        <View style={styles.minimumIcon}>
-          <Ionicons
-            name="information-circle"
-            size={19}
-            color={colors.warning}
-          />
-        </View>
-
-        <Text style={styles.minimumText}>
-          You can withdraw only when your amount is more than{' '}
-          <Text style={styles.minimumBold}>{MIN_WITHDRAW} coins</Text>.
-        </Text>
-      </View>
-
-      <Text style={styles.sectionTitle}>Choose payout method</Text>
-
-      <View style={styles.methodRow}>
-        <PayoutMethodCard
-          icon="phone-portrait-outline"
-          title="UPI"
-          subtitle="Instant"
-          tag="INSTANT"
-          selected={method === 'upi'}
-          onPress={() => setMethod('upi')}
-        />
-
-        <View style={styles.methodGap} />
-
-        <PayoutMethodCard
-          icon="business-outline"
-          title="Bank"
-          subtitle="1–2 hours"
-          tag="NEFT"
-          tagColor={colors.textSecondary}
-          tagBg={colors.border}
-          selected={method === 'bank'}
-          onPress={() => setMethod('bank')}
-        />
-      </View>
-
-      <View style={styles.formCard}>
-        {method === 'upi' ? (
-          <>
-            <Text style={styles.fieldLabel}>UPI ID</Text>
-
-            <View style={styles.inputRow}>
-              <Ionicons
-                name="at"
-                size={18}
-                color={colors.primary}
-              />
-
-              <TextInput
-                style={styles.input}
-                placeholder="yourname@okicici"
-                placeholderTextColor={colors.textMuted}
-                value={upiId}
-                onChangeText={setUpiId}
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
-            </View>
-          </>
-        ) : (
-          <View style={styles.bankInfo}>
-            <Ionicons
-              name="shield-checkmark-outline"
-              size={20}
-              color={colors.primary}
-            />
-
-            <Text style={styles.bankInfoText}>
-              Your withdrawal will be sent to your saved bank account.
-              Update bank details from Profile → Edit profile.
-            </Text>
-          </View>
-        )}
-
-        <Text style={[styles.fieldLabel, styles.amountLabel]}>
-          Withdrawal amount
-        </Text>
-
-        <View style={styles.inputRow}>
-          <AnimatedCoin size={22} />
-
-          <TextInput
-            style={styles.input}
-            placeholder="Enter coins"
-            placeholderTextColor={colors.textMuted}
-            keyboardType="numeric"
-            value={amount}
-            onChangeText={setAmount}
-          />
-
-          <Text style={styles.suffix}>coins</Text>
-        </View>
-
-        <View style={styles.quickAmountRow}>
-          <Text style={styles.quickAmountLabel}>Quick select</Text>
-
-          <View style={styles.quickButtons}>
-            {[150, 250, 500].map((value) => (
-              <TouchableOpacity
-                key={value}
-                style={styles.quickButton}
-                onPress={() => setQuickAmount(value)}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.quickButtonText}>{value}</Text>
-              </TouchableOpacity>
-            ))}
-
-            <TouchableOpacity
-              style={styles.quickButton}
-              onPress={() =>
-                setAmount(String(Math.floor(coinBalance)))
-              }
-              activeOpacity={0.8}
-            >
-              <Text style={styles.quickButtonText}>MAX</Text>
+    <SafeAreaView style={styles.container}>
+      <Animated.View style={[styles.fullScreenAnimatedContainer, { opacity: fadeAnim }]}>
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          
+          {/* Header */}
+          <View style={styles.header}>
+            <Text style={styles.headerTitle}>Withdraw</Text>
+            <TouchableOpacity style={styles.historyButton}>
+              <Ionicons name="time-outline" size={16} color="#FF3E86" style={{ marginRight: 4 }} />
+              <Text style={styles.historyText}>History</Text>
             </TouchableOpacity>
           </View>
-        </View>
 
-        <Text style={styles.helper}>
-          Amount must be greater than {MIN_WITHDRAW} coins · 1 coin = ₹1
-        </Text>
+          {/* Ultra Animated Balance Card */}
+          <View style={styles.balanceCard}>
+            <Animated.View style={[styles.floatingCircle1, { transform: [{ translateY: floatValue }] }]} />
+            <Animated.View style={[styles.floatingCircle2, { transform: [{ translateY: Animated.multiply(floatValue, -1) }] }]} />
+            
+            <Text style={styles.balanceLabel}>Available Balance</Text>
+            <View style={styles.balanceRow}>
+              <Animated.View style={{ transform: [{ scale: bounceValue }], marginRight: 10 }}>
+                <View style={styles.roundCoinLarge}>
+                  <Text style={styles.rupeeIconLarge}>₹</Text>
+                </View>
+              </Animated.View>
+              <Text style={styles.balanceValue}>{balance}</Text>
+            </View>
+          </View>
 
-        <Animated.View
-          style={[
-            styles.buttonWrapper,
-            {
-              transform: [
-                {
-                  scale: canWithdraw ? buttonScale : 1,
-                },
-              ],
-            },
-          ]}
-        >
-          <TouchableOpacity
-            style={[
-              styles.cta,
-              !canWithdraw && styles.ctaDisabled,
-              canWithdraw && { backgroundColor: glowColor },
-            ]}
-            onPress={handleWithdraw}
-            activeOpacity={0.86}
-          >
-            <View style={styles.ctaIcon}>
-              <Ionicons
-                name={
-                  canWithdraw
-                    ? 'arrow-up-circle'
-                    : 'lock-closed'
-                }
-                size={21}
-                color={colors.white}
-              />
+          <Text style={styles.sectionTitle}>Select Payout Method</Text>
+
+          {/* Payment Methods */}
+          <View style={styles.methodsContainer}>
+            {withdrawMethods.map((method, index) => {
+              const animScale = cardAnims[index].interpolate({ inputRange: [0, 1], outputRange: [0.8, 1] });
+              const animTranslate = cardAnims[index].interpolate({ inputRange: [0, 1], outputRange: [50, 0] });
+              const isSelected = selectedMethod === method.id;
+
+              return (
+                <Animated.View key={method.id} style={{ transform: [{ scale: animScale }, { translateY: animTranslate }] }}>
+                  <TouchableOpacity 
+                    style={[styles.methodCard, isSelected && styles.methodCardSelected]}
+                    onPress={() => handleMethodSelect(method.id)}
+                    activeOpacity={0.8}
+                  >
+                    <View style={styles.methodCardHeader}>
+                      <View style={[styles.iconCircle, { backgroundColor: isSelected ? method.color : '#FFF0F5' }]}>
+                        <Ionicons name={method.icon} size={24} color={isSelected ? '#FFFFFF' : method.color} />
+                      </View>
+                      <View style={styles.methodTextContainer}>
+                        <Text style={styles.methodName}>{method.name}</Text>
+                        <Text style={styles.methodSub}>{method.subtitle}</Text>
+                      </View>
+                      <View style={styles.radioCircle}>
+                        {isSelected && <View style={[styles.radioDot, { backgroundColor: method.color }]} />}
+                      </View>
+                    </View>
+
+                    {/* Expandable Form */}
+                    {isSelected && (
+                      <View style={styles.formContainer}>
+                        
+                        {/* Minimum Amount Badge */}
+                        <View style={styles.minBadgeWrapper}>
+                           <View style={styles.minBadge}>
+                             <Ionicons name="information-circle" size={14} color="#D84315" style={{marginRight: 4}}/>
+                             <Text style={styles.minBadgeText}>Minimum Withdrawal: ₹50</Text>
+                           </View>
+                        </View>
+
+                        {/* Amount Input */}
+                        <Text style={styles.inputLabel}>Amount (₹)</Text>
+                        <TextInput
+                          style={styles.inputField}
+                          placeholder="Enter amount to withdraw (Min 50)"
+                          keyboardType="numeric"
+                          value={amount}
+                          onChangeText={setAmount}
+                          placeholderTextColor="#999"
+                        />
+
+                        {/* UPI Form */}
+                        {method.id === 'upi' && (
+                          <>
+                            <Text style={styles.inputLabel}>User UPI ID</Text>
+                            <TextInput
+                              style={styles.inputField}
+                              placeholder="e.g. 9876543210@ybl"
+                              value={upiDetails.upiId}
+                              onChangeText={(text) => setUpiDetails({...upiDetails, upiId: text})}
+                              placeholderTextColor="#999"
+                            />
+                            <Text style={styles.inputLabel}>Account Holder Name</Text>
+                            <TextInput
+                              style={styles.inputField}
+                              placeholder="Enter name registered with UPI"
+                              value={upiDetails.name}
+                              onChangeText={(text) => setUpiDetails({...upiDetails, name: text})}
+                              placeholderTextColor="#999"
+                            />
+                          </>
+                        )}
+
+                        {/* Bank Form */}
+                        {method.id === 'bank' && (
+                          <>
+                            <Text style={styles.inputLabel}>Bank Account Number</Text>
+                            <TextInput
+                              style={styles.inputField}
+                              placeholder="Enter Account Number"
+                              keyboardType="numeric"
+                              value={bankDetails.accNo}
+                              onChangeText={(text) => setBankDetails({...bankDetails, accNo: text})}
+                              placeholderTextColor="#999"
+                            />
+                            <Text style={styles.inputLabel}>Payee Name</Text>
+                            <TextInput
+                              style={styles.inputField}
+                              placeholder="Enter Account Holder Name"
+                              value={bankDetails.payeeName}
+                              onChangeText={(text) => setBankDetails({...bankDetails, payeeName: text})}
+                              placeholderTextColor="#999"
+                            />
+                            <Text style={styles.inputLabel}>IFSC Code</Text>
+                            <TextInput
+                              style={styles.inputField}
+                              placeholder="e.g. SBIN0001234"
+                              autoCapitalize="characters"
+                              value={bankDetails.ifsc}
+                              onChangeText={(text) => setBankDetails({...bankDetails, ifsc: text})}
+                              placeholderTextColor="#999"
+                            />
+                            <Text style={styles.inputLabel}>Bank Name</Text>
+                            <TextInput
+                              style={styles.inputField}
+                              placeholder="e.g. State Bank of India"
+                              value={bankDetails.bankName}
+                              onChangeText={(text) => setBankDetails({...bankDetails, bankName: text})}
+                              placeholderTextColor="#999"
+                            />
+                          </>
+                        )}
+
+                        {/* Submit Button inside form */}
+                        <Animated.View style={{ transform: [{ scale: pulseValue }], marginTop: 20 }}>
+                          <TouchableOpacity 
+                            style={[styles.submitBtn, !isFormValid() && styles.submitBtnDisabled]}
+                            disabled={!isFormValid()}
+                            onPress={handleSubmit}
+                          >
+                            <Text style={styles.submitBtnText}>Submit Request</Text>
+                            <Ionicons name="arrow-forward" size={18} color="#FFFFFF" style={{ marginLeft: 8 }} />
+                          </TouchableOpacity>
+                        </Animated.View>
+
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                </Animated.View>
+              );
+            })}
+          </View>
+        </ScrollView>
+      </Animated.View>
+
+      {/* Success Modal */}
+      <Modal visible={showSuccess} transparent={true} animationType="fade">
+        <View style={styles.modalOverlay}>
+          <Animated.View style={[styles.successModalContent, { transform: [{ scale: successScale }] }]}>
+            
+            <View style={styles.successIconBg}>
+              <Animated.View style={{ transform: [{ scale: bounceValue }] }}>
+                 <Ionicons name="checkmark-circle" size={80} color="#27ae60" />
+              </Animated.View>
+            </View>
+            
+            <Text style={styles.successTitle}>Withdrawal Submitted!</Text>
+            
+            <View style={styles.successMsgBox}>
+              <Text style={styles.successDesc}>
+                You will receive the amount within <Text style={{fontWeight: 'bold', color: '#1A1A1A'}}>24-48 business hours.</Text>
+              </Text>
+              <Text style={styles.successDesc2}>
+                It shows in your withdrawal history as <Text style={{fontWeight: 'bold', color: '#FF7A00'}}>Pending</Text> until processed successfully by the backend.
+              </Text>
             </View>
 
-            <View style={styles.ctaTextGroup}>
-              <Text style={styles.ctaText}>
-                {getWithdrawMessage()}
-              </Text>
-
-              <Text style={styles.ctaSubtitle}>
-                {getWithdrawSubtitle()}
-              </Text>
-            </View>
-
-            <Ionicons
-              name="chevron-forward"
-              size={20}
-              color={colors.white}
-            />
-          </TouchableOpacity>
-        </Animated.View>
-
-        <View style={styles.securityNote}>
-          <Ionicons
-            name="shield-checkmark-outline"
-            size={18}
-            color={colors.textSecondary}
-          />
-
-          <Text style={styles.securityText}>
-            Zero fees · We never ask for OTP, PIN, or money to release a
-            withdrawal.
-          </Text>
+            <TouchableOpacity style={styles.successCloseBtn} onPress={closeSuccess}>
+              <Text style={styles.successCloseBtnText}>Done</Text>
+            </TouchableOpacity>
+            
+          </Animated.View>
         </View>
-      </View>
-    </ScrollView>
+      </Modal>
+
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
+  container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: '#FFF0F5', 
   },
-  content: {
-    paddingBottom: 42,
+  fullScreenAnimatedContainer: {
+    flex: 1,
+  },
+  scrollContent: {
+    padding: 16,
+    paddingTop: 45,
+    paddingBottom: 40, 
   },
   header: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: spacing.lg + 20,
-    paddingHorizontal: spacing.md,
-    paddingBottom: spacing.sm,
-  },
-  backBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: radius.md,
-    backgroundColor: colors.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: spacing.md,
+    marginBottom: 20,
   },
   headerTitle: {
-    ...typography.h1,
-    color: colors.textPrimary,
-    fontSize: 25,
+    fontSize: 26,
+    fontWeight: '900',
+    color: '#1A1A1A',
   },
-  headerSubtitle: {
-    ...typography.small,
-    color: colors.textSecondary,
-    marginTop: 2,
-  },
-  minimumNotice: {
+  historyButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.warningBg,
-    borderRadius: radius.md,
-    marginHorizontal: spacing.md,
-    marginTop: spacing.md,
-    padding: spacing.sm,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#FFE4E1',
+    shadowColor: '#FF3E86',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  minimumIcon: {
-    marginRight: spacing.sm,
+  historyText: {
+    color: '#FF3E86',
+    fontWeight: 'bold',
+    fontSize: 12,
   },
-  minimumText: {
-    ...typography.small,
-    color: colors.textSecondary,
-    flex: 1,
-    lineHeight: 18,
+  balanceCard: {
+    backgroundColor: '#FF3E86', 
+    borderRadius: 24,
+    padding: 24,
+    alignItems: 'center',
+    marginBottom: 24,
+    overflow: 'hidden',
+    shadowColor: '#FF3E86',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 10,
+    elevation: 8,
   },
-  minimumBold: {
-    color: colors.textPrimary,
-    fontWeight: '800',
+  floatingCircle1: {
+    position: 'absolute', top: -30, left: -20, width: 120, height: 120, borderRadius: 60,
+    backgroundColor: 'rgba(255, 215, 0, 0.2)', 
+  },
+  floatingCircle2: {
+    position: 'absolute', bottom: -40, right: -20, width: 140, height: 140, borderRadius: 70,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+  },
+  balanceLabel: {
+    fontSize: 14, color: '#FFE4E1', fontWeight: 'bold', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 1,
+  },
+  balanceRow: {
+    flexDirection: 'row', alignItems: 'center',
+  },
+  roundCoinLarge: {
+    width: 38, height: 38, borderRadius: 19, backgroundColor: '#FFD700', 
+    justifyContent: 'center', alignItems: 'center',
+    shadowColor: '#FFA500', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.8, shadowRadius: 6, elevation: 4,
+  },
+  rupeeIconLarge: {
+    fontSize: 22, fontWeight: '900', color: '#1A1A1A',
+  },
+  balanceValue: {
+    fontSize: 48, fontWeight: '900', color: '#FFD700',
+    textShadowColor: 'rgba(0, 0, 0, 0.1)', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 2,
   },
   sectionTitle: {
-    ...typography.h2,
-    color: colors.textPrimary,
-    marginHorizontal: spacing.md,
-    marginTop: spacing.lg,
-    marginBottom: spacing.sm,
+    fontSize: 18, fontWeight: 'bold', color: '#1A1A1A', marginBottom: 16,
   },
-  methodRow: {
-    flexDirection: 'row',
-    marginHorizontal: spacing.md,
+  methodsContainer: {
+    marginBottom: 20,
   },
-  methodGap: {
-    width: spacing.md,
+  methodCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 2,
+    borderColor: '#FFE4E1',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 2,
+    overflow: 'hidden',
   },
-  formCard: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    margin: spacing.md,
-    padding: spacing.md,
+  methodCardSelected: {
+    borderColor: '#FFD700',
+    backgroundColor: '#FFFAEB', 
   },
-  fieldLabel: {
-    ...typography.label,
-    color: colors.textPrimary,
-    marginBottom: spacing.xs,
-  },
-  amountLabel: {
-    marginTop: spacing.md,
-  },
-  inputRow: {
+  methodCardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.background,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.md,
-    height: 52,
   },
-  input: {
+  iconCircle: {
+    width: 50, height: 50, borderRadius: 25,
+    justifyContent: 'center', alignItems: 'center', marginRight: 14,
+  },
+  methodTextContainer: {
     flex: 1,
-    marginLeft: spacing.sm,
-    ...typography.body,
-    color: colors.textPrimary,
   },
-  suffix: {
-    ...typography.label,
-    color: colors.primary,
+  methodName: {
+    fontSize: 16, fontWeight: 'bold', color: '#1A1A1A', marginBottom: 2,
   },
-  bankInfo: {
+  methodSub: {
+    fontSize: 12, color: '#666666',
+  },
+  radioCircle: {
+    width: 24, height: 24, borderRadius: 12, borderWidth: 2, borderColor: '#CBD5E1',
+    justifyContent: 'center', alignItems: 'center', backgroundColor: '#FFF',
+  },
+  radioDot: {
+    width: 12, height: 12, borderRadius: 6,
+  },
+  formContainer: {
+    marginTop: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#FFE0B2',
+    paddingTop: 16,
+  },
+  minBadgeWrapper: {
+    alignItems: 'flex-start',
+    marginBottom: 16,
+  },
+  minBadge: {
     flexDirection: 'row',
-    backgroundColor: colors.primaryLight,
-    borderRadius: radius.md,
-    padding: spacing.sm,
-  },
-  bankInfoText: {
-    ...typography.small,
-    color: colors.textSecondary,
-    flex: 1,
-    marginLeft: spacing.sm,
-    lineHeight: 18,
-  },
-  quickAmountRow: {
-    marginTop: spacing.md,
-  },
-  quickAmountLabel: {
-    ...typography.small,
-    color: colors.textSecondary,
-    marginBottom: spacing.xs,
-  },
-  quickButtons: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
-  quickButton: {
-    backgroundColor: colors.primaryLight,
-    borderRadius: radius.pill,
+    alignItems: 'center',
+    backgroundColor: '#FFF3E0',
     paddingHorizontal: 12,
-    paddingVertical: 7,
-    marginRight: spacing.xs,
-    marginTop: 3,
+    paddingVertical: 6,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#FFE0B2',
   },
-  quickButtonText: {
-    ...typography.small,
-    color: colors.primary,
-    fontWeight: '800',
+  minBadgeText: {
+    color: '#D84315',
+    fontWeight: 'bold',
+    fontSize: 12,
   },
-  helper: {
-    ...typography.small,
-    color: colors.textMuted,
-    marginTop: spacing.sm,
-    lineHeight: 17,
+  inputLabel: {
+    fontSize: 13, fontWeight: 'bold', color: '#1A1A1A', marginBottom: 8, marginLeft: 4,
   },
-  buttonWrapper: {
-    marginTop: spacing.lg,
+  inputField: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#FFE4E1',
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 14,
+    color: '#1A1A1A',
+    marginBottom: 16,
   },
-  cta: {
+  submitBtn: {
     flexDirection: 'row',
-    alignItems: 'center',
-    minHeight: 62,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.sm,
-  },
-  ctaDisabled: {
-    backgroundColor: colors.textMuted,
-  },
-  ctaIcon: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: 'rgba(255,255,255,0.20)',
-    alignItems: 'center',
+    backgroundColor: '#FF3E86',
+    paddingVertical: 16,
+    borderRadius: 25,
     justifyContent: 'center',
-    marginRight: spacing.sm,
+    alignItems: 'center',
+    shadowColor: '#FF3E86',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
   },
-  ctaTextGroup: {
+  submitBtnDisabled: {
+    backgroundColor: '#CBD5E1',
+    shadowOpacity: 0, elevation: 0,
+  },
+  submitBtnText: {
+    color: '#FFFFFF', fontSize: 16, fontWeight: 'bold',
+  },
+  modalOverlay: {
     flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
   },
-  ctaText: {
-    ...typography.label,
-    color: colors.white,
-    fontSize: 15,
+  successModalContent: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 28,
+    padding: 30,
+    width: '100%',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.2,
+    shadowRadius: 20,
+    elevation: 10,
   },
-  ctaSubtitle: {
-    ...typography.small,
-    color: 'rgba(255,255,255,0.85)',
-    marginTop: 2,
+  successIconBg: {
+    width: 100, height: 100, borderRadius: 50, backgroundColor: '#E8F5E9',
+    justifyContent: 'center', alignItems: 'center', marginBottom: 20,
   },
-  securityNote: {
-    flexDirection: 'row',
-    marginTop: spacing.md,
-    backgroundColor: colors.background,
-    padding: spacing.sm,
-    borderRadius: radius.md,
+  successTitle: {
+    fontSize: 22, fontWeight: '900', color: '#1A1A1A', marginBottom: 16, textAlign: 'center'
   },
-  securityText: {
-    ...typography.small,
-    color: colors.textSecondary,
-    marginLeft: 8,
-    flex: 1,
-    lineHeight: 18,
-  },
-});
+  successMsgBox: {
+    backgroundColor: '#F8F9FA',
+  
