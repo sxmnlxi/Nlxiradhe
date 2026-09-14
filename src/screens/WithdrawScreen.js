@@ -7,13 +7,12 @@ import { Ionicons } from '@expo/vector-icons';
 
 const { width } = Dimensions.get('window');
 
-// Enable LayoutAnimation for Android to make the form expansion smooth
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-export default function WithdrawScreen() {
-  const [balance, setBalance] = useState('350.00'); // Mock balance
+export default function WithdrawScreen({ navigation }) {
+  const [balance, setBalance] = useState('350.00');
   const [selectedMethod, setSelectedMethod] = useState(null);
   const [amount, setAmount] = useState('');
   
@@ -28,7 +27,7 @@ export default function WithdrawScreen() {
     { id: 'bank', name: 'Bank Transfer', icon: 'business', color: '#0052FF', subtitle: 'Direct to Bank Account' },
   ];
 
-  // --- Ultra Animation Values ---
+  // --- Animation Values ---
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const bounceValue = useRef(new Animated.Value(1)).current;
   const pulseValue = useRef(new Animated.Value(1)).current;
@@ -38,15 +37,12 @@ export default function WithdrawScreen() {
   const cardAnims = useRef(withdrawMethods.map(() => new Animated.Value(0))).current;
 
   useEffect(() => {
-    // 1. Fade in the whole screen
     Animated.timing(fadeAnim, { toValue: 1, duration: 600, useNativeDriver: true }).start();
 
-    // 2. Staggered bouncy entrance for payment methods
     Animated.stagger(200, cardAnims.map(anim => 
       Animated.spring(anim, { toValue: 1, friction: 4, tension: 40, useNativeDriver: true })
     )).start();
 
-    // 3. Continuous Bouncing for Coins
     Animated.loop(
       Animated.sequence([
         Animated.timing(bounceValue, { toValue: 1.25, duration: 500, useNativeDriver: true }),
@@ -54,7 +50,6 @@ export default function WithdrawScreen() {
       ])
     ).start();
 
-    // 4. Continuous Pulsing for Main CTA Button
     Animated.loop(
       Animated.sequence([
         Animated.timing(pulseValue, { toValue: 1.03, duration: 800, useNativeDriver: true }),
@@ -62,14 +57,12 @@ export default function WithdrawScreen() {
       ])
     ).start();
 
-    // 5. Floating background elements
     Animated.loop(
       Animated.sequence([
         Animated.timing(floatValue, { toValue: 10, duration: 2000, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
         Animated.timing(floatValue, { toValue: 0, duration: 2000, easing: Easing.inOut(Easing.ease), useNativeDriver: true })
       ])
     ).start();
-
   }, []);
 
   const handleMethodSelect = (id) => {
@@ -92,8 +85,6 @@ export default function WithdrawScreen() {
 
   const handleSubmit = () => {
     if (!isFormValid()) return;
-    
-    // Animate Success Modal Pop-up
     setShowSuccess(true);
     Animated.spring(successScale, {
       toValue: 1,
@@ -122,16 +113,28 @@ export default function WithdrawScreen() {
       <Animated.View style={[styles.fullScreenAnimatedContainer, { opacity: fadeAnim }]}>
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           
-          {/* Header */}
+          {/* Header with Back Button */}
           <View style={styles.header}>
+            <TouchableOpacity 
+              onPress={() => navigation.goBack()} 
+              style={styles.backButton}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="arrow-back" size={20} color="#1A1A1A" />
+            </TouchableOpacity>
             <Text style={styles.headerTitle}>Withdraw</Text>
-            <TouchableOpacity style={styles.historyButton}>
+            
+            {/* Linked to Withdrawal History / My Offers status */}
+            <TouchableOpacity 
+              style={styles.historyButton}
+              onPress={() => navigation.navigate('My Offers')}
+            >
               <Ionicons name="time-outline" size={16} color="#FF3E86" style={{ marginRight: 4 }} />
               <Text style={styles.historyText}>History</Text>
             </TouchableOpacity>
           </View>
 
-          {/* Ultra Animated Balance Card */}
+          {/* Ultra Animated Balance Card with 1 Coin = ₹1 text */}
           <View style={styles.balanceCard}>
             <Animated.View style={[styles.floatingCircle1, { transform: [{ translateY: floatValue }] }]} />
             <Animated.View style={[styles.floatingCircle2, { transform: [{ translateY: Animated.multiply(floatValue, -1) }] }]} />
@@ -145,6 +148,7 @@ export default function WithdrawScreen() {
               </Animated.View>
               <Text style={styles.balanceValue}>{balance}</Text>
             </View>
+            <Text style={styles.conversionText}>1 Coin = ₹1 Conversion Rate</Text>
           </View>
 
           <Text style={styles.sectionTitle}>Select Payout Method</Text>
@@ -179,8 +183,6 @@ export default function WithdrawScreen() {
                     {/* Expandable Form */}
                     {isSelected && (
                       <View style={styles.formContainer}>
-                        
-                        {/* Minimum Amount Badge */}
                         <View style={styles.minBadgeWrapper}>
                            <View style={styles.minBadge}>
                              <Ionicons name="information-circle" size={14} color="#D84315" style={{marginRight: 4}}/>
@@ -188,7 +190,6 @@ export default function WithdrawScreen() {
                            </View>
                         </View>
 
-                        {/* Amount Input */}
                         <Text style={styles.inputLabel}>Amount (₹)</Text>
                         <TextInput
                           style={styles.inputField}
@@ -199,7 +200,6 @@ export default function WithdrawScreen() {
                           placeholderTextColor="#999"
                         />
 
-                        {/* UPI Form */}
                         {method.id === 'upi' && (
                           <>
                             <Text style={styles.inputLabel}>User UPI ID</Text>
@@ -221,7 +221,6 @@ export default function WithdrawScreen() {
                           </>
                         )}
 
-                        {/* Bank Form */}
                         {method.id === 'bank' && (
                           <>
                             <Text style={styles.inputLabel}>Bank Account Number</Text>
@@ -261,7 +260,6 @@ export default function WithdrawScreen() {
                           </>
                         )}
 
-                        {/* Submit Button inside form */}
                         <Animated.View style={{ transform: [{ scale: pulseValue }], marginTop: 20 }}>
                           <TouchableOpacity 
                             style={[styles.submitBtn, !isFormValid() && styles.submitBtnDisabled]}
@@ -272,7 +270,6 @@ export default function WithdrawScreen() {
                             <Ionicons name="arrow-forward" size={18} color="#FFFFFF" style={{ marginLeft: 8 }} />
                           </TouchableOpacity>
                         </Animated.View>
-
                       </View>
                     )}
                   </TouchableOpacity>
@@ -287,7 +284,6 @@ export default function WithdrawScreen() {
       <Modal visible={showSuccess} transparent={true} animationType="fade">
         <View style={styles.modalOverlay}>
           <Animated.View style={[styles.successModalContent, { transform: [{ scale: successScale }] }]}>
-            
             <View style={styles.successIconBg}>
               <Animated.View style={{ transform: [{ scale: bounceValue }] }}>
                  <Ionicons name="checkmark-circle" size={80} color="#27ae60" />
@@ -308,11 +304,9 @@ export default function WithdrawScreen() {
             <TouchableOpacity style={styles.successCloseBtn} onPress={closeSuccess}>
               <Text style={styles.successCloseBtnText}>Done</Text>
             </TouchableOpacity>
-            
           </Animated.View>
         </View>
       </Modal>
-
     </SafeAreaView>
   );
 }
@@ -320,7 +314,7 @@ export default function WithdrawScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFF0F5', 
+    backgroundColor: '#FFF0F5',
   },
   fullScreenAnimatedContainer: {
     flex: 1,
@@ -328,7 +322,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: 16,
     paddingTop: 45,
-    paddingBottom: 40, 
+    paddingBottom: 40,
   },
   header: {
     flexDirection: 'row',
@@ -336,8 +330,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 20,
   },
+  backButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#FFE4E1',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
   headerTitle: {
-    fontSize: 26,
+    fontSize: 24,
     fontWeight: '900',
     color: '#1A1A1A',
   },
@@ -345,8 +354,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
     borderRadius: 20,
     borderWidth: 1,
     borderColor: '#FFE4E1',
@@ -362,7 +371,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   balanceCard: {
-    backgroundColor: '#FF3E86', 
+    backgroundColor: '#FF3E86',
     borderRadius: 24,
     padding: 24,
     alignItems: 'center',
@@ -376,7 +385,7 @@ const styles = StyleSheet.create({
   },
   floatingCircle1: {
     position: 'absolute', top: -30, left: -20, width: 120, height: 120, borderRadius: 60,
-    backgroundColor: 'rgba(255, 215, 0, 0.2)', 
+    backgroundColor: 'rgba(255, 215, 0, 0.2)',
   },
   floatingCircle2: {
     position: 'absolute', bottom: -40, right: -20, width: 140, height: 140, borderRadius: 70,
@@ -386,10 +395,10 @@ const styles = StyleSheet.create({
     fontSize: 14, color: '#FFE4E1', fontWeight: 'bold', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 1,
   },
   balanceRow: {
-    flexDirection: 'row', alignItems: 'center',
+    flexDirection: 'row', alignItems: 'center', marginBottom: 6,
   },
   roundCoinLarge: {
-    width: 38, height: 38, borderRadius: 19, backgroundColor: '#FFD700', 
+    width: 38, height: 38, borderRadius: 19, backgroundColor: '#FFD700',
     justifyContent: 'center', alignItems: 'center',
     shadowColor: '#FFA500', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.8, shadowRadius: 6, elevation: 4,
   },
@@ -399,6 +408,16 @@ const styles = StyleSheet.create({
   balanceValue: {
     fontSize: 48, fontWeight: '900', color: '#FFD700',
     textShadowColor: 'rgba(0, 0, 0, 0.1)', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 2,
+  },
+  conversionText: {
+    fontSize: 12,
+    color: '#FFFFFF',
+    fontWeight: '700',
+    backgroundColor: 'rgba(0, 0, 0, 0.15)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 10,
+    overflow: 'hidden',
   },
   sectionTitle: {
     fontSize: 18, fontWeight: 'bold', color: '#1A1A1A', marginBottom: 16,
@@ -422,7 +441,7 @@ const styles = StyleSheet.create({
   },
   methodCardSelected: {
     borderColor: '#FFD700',
-    backgroundColor: '#FFFAEB', 
+    backgroundColor: '#FFFAEB',
   },
   methodCardHeader: {
     flexDirection: 'row',
@@ -531,7 +550,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center', alignItems: 'center', marginBottom: 20,
   },
   successTitle: {
-    fontSize: 22, fontWeight: '900', color: '#1A1A1A', marginBottom: 16, textAlign: 'center'
+    fontSize: 22, fontWeight: '900', color: '#1A1A1A', marginBottom: 16, textAlign: 'center',
   },
   successMsgBox: {
     backgroundColor: '#F8F9FA',
@@ -559,4 +578,3 @@ const styles = StyleSheet.create({
     color: '#FFFFFF', fontSize: 16, fontWeight: 'bold',
   },
 });
-  
