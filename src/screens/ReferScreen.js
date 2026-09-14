@@ -1,320 +1,261 @@
-import React, { useEffect, useRef, useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Share,
-  Alert,
-  Animated,
-} from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, SafeAreaView, RefreshControl, Dimensions, Animated, Modal, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { colors, spacing, radius, typography } from '../theme/colors';
-import { getDeviceId } from '../utils/deviceId';
-import AnimatedCoin from '../components/AnimatedCoin';
 
-const FALLBACK_REWARD = 25;
-const FALLBACK_REQUIRED_OFFERS = 2;
+const { width } = Dimensions.get('window');
 
-export default function ReferScreen() {
-  const [referralCode, setReferralCode] = useState('REWARD-LOADING');
-  const bounce = useRef(new Animated.Value(0)).current;
+export default function ProfileScreen({ navigation, route }) {
+  const [refreshing, setRefreshing] = useState(false);
+  const [activeModal, setActiveModal] = useState(null); // Only for FAQs, Support, and Terms modals
+
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const spinValue = useRef(new Animated.Value(0)).current;
+  const bounceValue = useRef(new Animated.Value(1)).current;
+
+  const leaderboardFaqs = [
+    { q: 'How does the Leaderboard work?', a: 'The leaderboard ranks top users based on total coins earned within each day, week, and month.' },
+    { q: 'When are leaderboard rewards distributed?', a: 'Prizes are automatically credited to your wallet at the end of each cycle.' },
+    { q: 'Is there any entry fee?', a: 'No! Participation in the leaderboard is completely free for all active users.' }
+  ];
 
   useEffect(() => {
-    const animation = Animated.loop(
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 500,
+      useNativeDriver: true,
+    }).start();
+
+    Animated.loop(
+      Animated.timing(spinValue, {
+        toValue: 1,
+        duration: 3000,
+        useNativeDriver: true,
+      })
+    ).start();
+
+    Animated.loop(
       Animated.sequence([
-        Animated.timing(bounce, {
-          toValue: 1,
-          duration: 700,
-          useNativeDriver: true,
-        }),
-        Animated.timing(bounce, {
-          toValue: 0,
-          duration: 700,
-          useNativeDriver: true,
-        }),
+        Animated.timing(bounceValue, { toValue: 1.15, duration: 600, useNativeDriver: true }),
+        Animated.timing(bounceValue, { toValue: 1, duration: 600, useNativeDriver: true })
       ])
-    );
-
-    animation.start();
-
-    const loadReferralCode = async () => {
-      try {
-        const deviceId = getDeviceId();
-        const accountKey = `account_${deviceId}`;
-        const accountRaw = await AsyncStorage.getItem(accountKey);
-
-        if (accountRaw) {
-          const account = JSON.parse(accountRaw);
-
-          if (account.ownReferralCode) {
-            setReferralCode(account.ownReferralCode);
-            return;
-          }
-
-          const newCode =
-            `REWARD-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
-
-          await AsyncStorage.setItem(
-            accountKey,
-            JSON.stringify({
-              ...account,
-              ownReferralCode: newCode,
-            })
-          );
-
-          setReferralCode(newCode);
-          return;
-        }
-
-        setReferralCode(
-          `REWARD-${Math.random().toString(36).slice(2, 8).toUpperCase()}`
-        );
-      } catch (error) {
-        setReferralCode('REWARD-ERROR');
-      }
-    };
-
-    loadReferralCode();
-
-    return () => animation.stop();
+    ).start();
   }, []);
 
-  const shareInvite = async () => {
-    try {
-      await Share.share({
-        message:
-          `Join me on RewardApp and earn coins by completing offers!\n\n` +
-          `Use my referral code when signing up: ${referralCode}\n\n` +
-          `I receive ${FALLBACK_REWARD} coins after you complete ` +
-          `${FALLBACK_REQUIRED_OFFERS} verified offers.`,
-      });
-    } catch (error) {
-      Alert.alert('Sharing failed', 'Please try sharing again.');
-    }
-  };
-
-  const heroTranslateY = bounce.interpolate({
+  const spin = spinValue.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, -8],
+    outputRange: ['0deg', '360deg']
   });
 
+  const onRefresh = () => {
+    setRefreshing(true);
+    setTimeout(() => {
+      setRefreshing(false);
+    }, 1000);
+  };
+
+  const handleLogout = () => {
+    navigation.reset({
+      index: 0,
+      routes: [{ name: 'Login' }],
+    });
+  };
+
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
-      <View style={styles.hero}>
-        <Animated.View
-          style={[
-            styles.giftIcon,
-            { transform: [{ translateY: heroTranslateY }] },
-          ]}
+    <SafeAreaView style={styles.container}>
+      <Animated.View style={[styles.fullScreenAnimatedContainer, { opacity: fadeAnim }]}>
+        <ScrollView 
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#FF3E86" />}
         >
-          <Ionicons name="gift" size={32} color={colors.white} />
-        </Animated.View>
+          {/* Top Header */}
+          <View style={styles.header}>
+            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+              <Ionicons name="arrow-back" size={20} color="#1A1A1A" />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>My Profile</Text>
+            <View style={{ width: 36 }} />
+          </View>
 
-        <Text style={styles.title}>Refer & earn</Text>
+          {/* User Info Card */}
+          <View style={styles.profileCard}>
+            <View style={styles.avatarLarge}>
+              <Ionicons name="person" size={36} color="#FF3E86" />
+            </View>
+            <Text style={styles.profileName}>VERMA</Text>
+            <Text style={styles.profileEmail}>verma.user@rewardapp.com</Text>
+            <View style={styles.walletBadgeRow}>
+              <Animated.View style={{ transform: [{ rotate: spin }, { scale: bounceValue }], marginRight: 6 }}>
+                <View style={styles.roundCoinSmall}>
+                  <Ionicons name="logo-bitcoin" size={10} color="#1A1A1A" />
+                </View>
+              </Animated.View>
+              <Text style={styles.walletBadgeText}>Balance: 1,400 Coins</Text>
+            </View>
+          </View>
 
-        <Text style={styles.heroText}>
-          Invite friends and earn {FALLBACK_REWARD} coins when they complete{' '}
-          {FALLBACK_REQUIRED_OFFERS} verified offers.
-        </Text>
-      </View>
+          {/* Profile Menu Options - Navigating to separate screens */}
+          <View style={styles.menuContainer}>
+            <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('EditProfile')}>
+              <View style={styles.menuIconBox}>
+                <Ionicons name="create-outline" size={20} color="#FF3E86" />
+              </View>
+              <Text style={styles.menuText}>Edit Profile</Text>
+              <Ionicons name="chevron-forward" size={18} color="#CCCCCC" />
+            </TouchableOpacity>
 
-      <View style={styles.codeCard}>
-        <Text style={styles.codeLabel}>Your referral code</Text>
-        <Text style={styles.code}>{referralCode}</Text>
+            <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('WithdrawalHistory')}>
+              <View style={styles.menuIconBox}>
+                <Ionicons name="wallet-outline" size={20} color="#FF3E86" />
+              </View>
+              <Text style={styles.menuText}>Withdrawal History</Text>
+              <Ionicons name="chevron-forward" size={18} color="#CCCCCC" />
+            </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.shareButton}
-          activeOpacity={0.85}
-          onPress={shareInvite}
-        >
-          <Ionicons
-            name="share-social-outline"
-            size={18}
-            color={colors.white}
-          />
-          <Text style={styles.shareButtonText}>Share invite</Text>
-        </TouchableOpacity>
-      </View>
+            <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('TransactionHistory')}>
+              <View style={styles.menuIconBox}>
+                <Ionicons name="time-outline" size={20} color="#FF3E86" />
+              </View>
+              <Text style={styles.menuText}>Transaction History</Text>
+              <Ionicons name="chevron-forward" size={18} color="#CCCCCC" />
+            </TouchableOpacity>
 
-      <Text style={styles.sectionTitle}>How it works</Text>
+            <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('Leaderboard')}>
+              <View style={styles.menuIconBox}>
+                <Ionicons name="trophy-outline" size={20} color="#FF3E86" />
+              </View>
+              <Text style={styles.menuText}>Leaderboard Top Earners</Text>
+              <Ionicons name="chevron-forward" size={18} color="#CCCCCC" />
+            </TouchableOpacity>
 
-      <Step
-        number="1"
-        title="Share your invite"
-        text="Send your unique referral code to your friends."
-      />
-      <Step
-        number="2"
-        title="Friend creates an account"
-        text="Your friend enters your referral code during signup on a new device."
-      />
-      <Step
-        number="3"
-        title={`Earn ${FALLBACK_REWARD} coins`}
-        text={`Your coins are awarded after your friend completes ${FALLBACK_REQUIRED_OFFERS} verified offers.`}
-        last
-      />
+            <TouchableOpacity style={styles.menuItem} onPress={() => setActiveModal('leaderboardFaqs')}>
+              <View style={styles.menuIconBox}>
+                <Ionicons name="help-circle-outline" size={20} color="#FF3E86" />
+              </View>
+              <Text style={styles.menuText}>Leaderboard FAQs</Text>
+              <Ionicons name="chevron-forward" size={18} color="#CCCCCC" />
+            </TouchableOpacity>
 
-      <View style={styles.note}>
-        <AnimatedCoin size={22} />
-        <Text style={styles.noteText}>
-          Referral rewards should be verified by your backend to prevent
-          duplicate accounts and fake rewards.
-        </Text>
-      </View>
-    </ScrollView>
-  );
-}
+            <TouchableOpacity style={styles.menuItem} onPress={() => setActiveModal('support')}>
+              <View style={styles.menuIconBox}>
+                <Ionicons name="headset-outline" size={20} color="#FF3E86" />
+              </View>
+              <Text style={styles.menuText}>Customer Support</Text>
+              <Ionicons name="chevron-forward" size={18} color="#CCCCCC" />
+            </TouchableOpacity>
 
-function Step({ number, title, text, last }) {
-  return (
-    <View style={styles.stepRow}>
-      <View style={styles.stepColumn}>
-        <View style={styles.stepNumber}>
-          <Text style={styles.stepNumberText}>{number}</Text>
+            <TouchableOpacity style={styles.menuItem} onPress={() => setActiveModal('terms')}>
+              <View style={styles.menuIconBox}>
+                <Ionicons name="document-text-outline" size={20} color="#FF3E86" />
+              </View>
+              <Text style={styles.menuText}>Terms & Services</Text>
+              <Ionicons name="chevron-forward" size={18} color="#CCCCCC" />
+            </TouchableOpacity>
+          </View>
+
+          {/* Logout Button */}
+          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout} activeOpacity={0.8}>
+            <Ionicons name="log-out-outline" size={18} color="#FFFFFF" style={{ marginRight: 8 }} />
+            <Text style={styles.logoutButtonText}>Log Out</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </Animated.View>
+
+      {/* Modal for FAQs, Support, and Terms only */}
+      <Modal
+        visible={activeModal !== null}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setActiveModal(null)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalTopRow}>
+              <Text style={styles.modalTitle}>
+                {activeModal === 'leaderboardFaqs' && 'Leaderboard FAQs'}
+                {activeModal === 'support' && 'Customer Support'}
+                {activeModal === 'terms' && 'Terms & Services'}
+              </Text>
+              <TouchableOpacity onPress={() => setActiveModal(null)}>
+                <Ionicons name="close" size={24} color="#1A1A1A" />
+              </TouchableOpacity>
+            </View>
+
+            {activeModal === 'leaderboardFaqs' && (
+              <ScrollView showsVerticalScrollIndicator={false}>
+                {(leaderboardFaqs || []).map((faq, idx) => (
+                  <View key={idx} style={styles.faqCard}>
+                    <Text style={styles.faqQuestion}>{faq.q}</Text>
+                    <Text style={styles.faqAnswer}>{faq.a}</Text>
+                  </View>
+                ))}
+              </ScrollView>
+            )}
+
+            {activeModal === 'support' && (
+              <View>
+                <Text style={styles.supportSubText}>
+                  Having any issues with your tasks or coin additions? Send us your query directly via email, and our team will assist you promptly.
+                </Text>
+                <TouchableOpacity 
+                  style={styles.emailButton}
+                  onPress={() => Linking.openURL('mailto:support@rewardapp.com?subject=User Support Request')}
+                >
+                  <Ionicons name="mail" size={18} color="#FFFFFF" style={{ marginRight: 8 }} />
+                  <Text style={styles.emailButtonText}>support@rewardapp.com</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {activeModal === 'terms' && (
+              <ScrollView showsVerticalScrollIndicator={false}>
+                <Text style={styles.termsText}>
+                  Welcome to our platform. Please read these terms carefully before using our services:
+                  {'\n\n'}
+                  • <Text style={{ fontWeight: 'bold' }}>No Cashback Guarantee:</Text> We do not guarantee any fixed cashback or rewards as payouts depend entirely on successful offer completion verified by third-party partner networks.
+                  {'\n\n'}
+                  • <Text style={{ fontWeight: 'bold' }}>No Gambling Promotion:</Text> This application is strictly a safe task-completion and rewarded engagement app. We do not promote, host, or encourage any form of online gambling or betting activities.
+                  {'\n\n'}
+                  • <Text style={{ fontWeight: 'bold' }}>Safe Earning Environment:</Text> All task verifications are audited to maintain a secure ecosystem. Fraudulent attempts or use of multiple device accounts will result in instant account suspension.
+                </Text>
+              </ScrollView>
+            )}
+          </View>
         </View>
-        {!last && <View style={styles.stepLine} />}
-      </View>
-
-      <View style={styles.stepContent}>
-        <Text style={styles.stepTitle}>{title}</Text>
-        <Text style={styles.stepText}>{text}</Text>
-      </View>
-    </View>
+      </Modal>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  content: {
-    padding: spacing.md,
-    paddingTop: spacing.lg + 20,
-    paddingBottom: 40,
-  },
-  hero: {
-    alignItems: 'center',
-    paddingHorizontal: spacing.md,
-  },
-  giftIcon: {
-    width: 68,
-    height: 68,
-    borderRadius: 34,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  title: {
-    ...typography.h1,
-    color: colors.textPrimary,
-    fontSize: 28,
-    marginTop: spacing.sm,
-  },
-  heroText: {
-    ...typography.body,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    lineHeight: 21,
-    marginTop: spacing.xs,
-  },
-  codeCard: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    padding: spacing.lg,
-    alignItems: 'center',
-    marginTop: spacing.lg,
-  },
-  codeLabel: {
-    ...typography.small,
-    color: colors.textSecondary,
-  },
-  code: {
-    ...typography.h2,
-    color: colors.primary,
-    letterSpacing: 1.2,
-    marginTop: spacing.xs,
-  },
-  shareButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '100%',
-    backgroundColor: colors.primary,
-    borderRadius: radius.pill,
-    paddingVertical: 13,
-    marginTop: spacing.md,
-  },
-  shareButtonText: {
-    ...typography.label,
-    color: colors.white,
-    fontSize: 15,
-    marginLeft: 8,
-  },
-  sectionTitle: {
-    ...typography.h2,
-    color: colors.textPrimary,
-    marginTop: spacing.xl,
-    marginBottom: spacing.md,
-  },
-  stepRow: {
-    flexDirection: 'row',
-    minHeight: 68,
-  },
-  stepColumn: {
-    alignItems: 'center',
-    width: 32,
-  },
-  stepNumber: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: colors.primaryLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  stepNumberText: {
-    ...typography.label,
-    color: colors.primary,
-  },
-  stepLine: {
-    flex: 1,
-    width: 2,
-    backgroundColor: colors.border,
-    marginVertical: 4,
-  },
-  stepContent: {
-    flex: 1,
-    paddingLeft: spacing.sm,
-  },
-  stepTitle: {
-    ...typography.label,
-    color: colors.textPrimary,
-    fontSize: 14,
-  },
-  stepText: {
-    ...typography.small,
-    color: colors.textSecondary,
-    marginTop: 3,
-    lineHeight: 18,
-  },
-  note: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.primaryLight,
-    borderRadius: radius.md,
-    padding: spacing.sm,
-    marginTop: spacing.md,
-  },
-  noteText: {
-    ...typography.small,
-    color: colors.textSecondary,
-    marginLeft: spacing.sm,
-    flex: 1,
-    lineHeight: 17,
-  },
+  container: { flex: 1, backgroundColor: '#FFF0F5' },
+  fullScreenAnimatedContainer: { flex: 1 },
+  scrollContent: { padding: 16, paddingTop: 28, paddingBottom: 40 },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 },
+  backButton: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#FFFFFF', justifyContent: 'center', alignItems: 'center', elevation: 2 },
+  headerTitle: { fontSize: 18, fontWeight: 'bold', color: '#1A1A1A' },
+  profileCard: { backgroundColor: '#FFFFFF', borderRadius: 20, padding: 22, alignItems: 'center', marginBottom: 20, borderWidth: 1, borderColor: '#FFE4E1', elevation: 2 },
+  avatarLarge: { width: 70, height: 70, borderRadius: 35, backgroundColor: '#FFE4E1', justifyContent: 'center', alignItems: 'center', marginBottom: 12 },
+  profileName: { fontSize: 18, fontWeight: 'bold', color: '#1A1A1A', marginBottom: 2 },
+  profileEmail: { fontSize: 12, color: '#666666', marginBottom: 12 },
+  walletBadgeRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF8E1', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, borderWidth: 1, borderColor: '#FFE0B2' },
+  roundCoinSmall: { width: 18, height: 18, borderRadius: 9, backgroundColor: '#FFD700', justifyContent: 'center', alignItems: 'center' },
+  walletBadgeText: { fontSize: 13, fontWeight: 'bold', color: '#D84315' },
+  menuContainer: { backgroundColor: '#FFFFFF', borderRadius: 20, paddingVertical: 8, paddingHorizontal: 16, marginBottom: 24, borderWidth: 1, borderColor: '#FFE4E1', elevation: 2 },
+  menuItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#F8F9FA' },
+  menuIconBox: { width: 36, height: 36, borderRadius: 10, backgroundColor: '#FFF0F5', justifyContent: 'center', alignItems: 'center', marginRight: 14 },
+  menuText: { flex: 1, fontSize: 14, fontWeight: '600', color: '#1A1A1A' },
+  logoutButton: { backgroundColor: '#FF3E86', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', paddingVertical: 14, borderRadius: 25, elevation: 4 },
+  logoutButtonText: { color: '#FFFFFF', fontWeight: 'bold', fontSize: 15 },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+  modalContent: { backgroundColor: '#FFFFFF', borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 20, paddingBottom: 40, maxHeight: '85%' },
+  modalTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
+  modalTitle: { fontSize: 18, fontWeight: 'bold', color: '#1A1A1A' },
+  faqCard: { backgroundColor: '#F8F9FA', padding: 14, borderRadius: 14, marginBottom: 10, borderWidth: 1, borderColor: '#EEEEEE' },
+  faqQuestion: { fontSize: 13, fontWeight: 'bold', color: '#1A1A1A', marginBottom: 4 },
+  faqAnswer: { fontSize: 12, color: '#666666', lineHeight: 16 },
+  supportSubText: { fontSize: 13, color: '#666666', lineHeight: 18, marginBottom: 20 },
+  emailButton: { backgroundColor: '#FF3E86', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', paddingVertical: 14, borderRadius: 20, elevation: 3 },
+  emailButtonText: { color: '#FFFFFF', fontWeight: 'bold', fontSize: 14 },
+  termsText: { fontSize: 13, color: '#666666', lineHeight: 20 },
 });
