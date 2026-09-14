@@ -1,320 +1,379 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated, Linking, Alert } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { 
+  StyleSheet, Text, View, ScrollView, TouchableOpacity, SafeAreaView, 
+  Animated, TextInput, Dimensions, Easing, Modal 
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { colors, spacing, radius, typography } from '../theme/colors';
-import WithdrawScreen from './WithdrawScreen';
-import LeaderboardScreen from './LeaderboardScreen';
-import { getDeviceId } from '../utils/deviceId';
-import { useUserData } from '../context/UserDataContext';
-import AnimatedCoin from '../components/AnimatedCoin';
 
-const SUPPORT_EMAIL = 'support@yourapp.com';
+const { width } = Dimensions.get('window');
 
-const FAQS = [
-  { q: 'What is this app?', a: 'An app where you earn coins by completing simple offers and referring friends, then withdraw those coins to UPI or your bank account.' },
-  { q: 'How do I earn coins?', a: 'Open the Home tab, tap any offer on the Offers Wall, and follow its instructions. Coins are added automatically once an offer is verified as complete.' },
-  { q: 'How long do withdrawals take?', a: 'UPI withdrawals are usually instant to a few minutes; bank transfers can take 1-2 hours. You can track every withdrawal\'s status right here in your profile.' },
-];
+export default function ProfileScreen({ navigation }) {
+  // Editable state (Gmail is locked / read-only)
+  const [name, setName] = useState('VERMA');
+  const [email, setEmail] = useState('verma.user@gmail.com'); // Locked
+  const [password, setPassword] = useState('••••••••');
+  
+  const [isEditing, setIsEditing] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
-export default function ProfileScreen({ route, navigation }) {
-  const [page, setPage] = useState('menu');
-  const [account, setAccount] = useState(null);
-  const { offerStatuses, withdrawals, completeWithdrawal } = useUserData();
-
-  const fade = useRef(new Animated.Value(0)).current;
-  const translateY = useRef(new Animated.Value(16)).current;
+  // --- Animation Values ---
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const bounceValue = useRef(new Animated.Value(1)).current;
+  const pulseValue = useRef(new Animated.Value(1)).current;
+  const floatValue = useRef(new Animated.Value(0)).current;
+  const modalScale = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    (async () => {
-      try {
-        const raw = await AsyncStorage.getItem(`account_${getDeviceId()}`);
-        if (raw) setAccount(JSON.parse(raw));
-      } catch (e) {}
-    })();
+    // 1. Fade in screen
+    Animated.timing(fadeAnim, { toValue: 1, duration: 600, useNativeDriver: true }).start();
 
-    Animated.parallel([
-      Animated.timing(fade, { toValue: 1, duration: 450, useNativeDriver: true }),
-      Animated.spring(translateY, { toValue: 0, friction: 8, useNativeDriver: true }),
-    ]).start();
+    // 2. Continuous avatar bouncing
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(bounceValue, { toValue: 1.1, duration: 800, useNativeDriver: true }),
+        Animated.timing(bounceValue, { toValue: 1, duration: 800, useNativeDriver: true })
+      ])
+    ).start();
+
+    // 3. Pulsing save button
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseValue, { toValue: 1.03, duration: 600, useNativeDriver: true }),
+        Animated.timing(pulseValue, { toValue: 1, duration: 600, useNativeDriver: true })
+      ])
+    ).start();
+
+    // 4. Floating circles background animation
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(floatValue, { toValue: 8, duration: 2000, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+        Animated.timing(floatValue, { toValue: 0, duration: 2000, easing: Easing.inOut(Easing.ease), useNativeDriver: true })
+      ])
+    ).start();
   }, []);
 
-  useEffect(() => {
-    if (route?.params?.openWithdraw) {
-      setPage('withdraw');
-      navigation.setParams({ openWithdraw: undefined, ts: undefined });
-    }
-  }, [route?.params?.ts]);
+  const handleSave = () => {
+    setIsEditing(false);
+    setShowSuccessModal(true);
+    Animated.spring(modalScale, {
+      toValue: 1,
+      friction: 5,
+      tension: 40,
+      useNativeDriver: true,
+    }).start();
+  };
 
-  const completedOffers = Object.entries(offerStatuses).filter(([, entry]) => entry.status === 'completed');
-  const totalEarned = completedOffers.reduce((sum, [, e]) => sum + e.reward, 0);
-  const totalWithdrawn = withdrawals.filter((w) => w.status === 'successful').reduce((sum, w) => sum + w.amount, 0);
-  const pendingWithdrawals = withdrawals.filter((w) => w.status === 'pending');
-  const successfulWithdrawals = withdrawals.filter((w) => w.status === 'successful');
-
-  const handleContactUs = () => {
-    Linking.openURL(`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent('Support request')}`).catch(() => {
-      Alert.alert('Could not open mail app', `Please email us at ${SUPPORT_EMAIL}`);
+  const closeModal = () => {
+    Animated.timing(modalScale, { toValue: 0, duration: 200, useNativeDriver: true }).start(() => {
+      setShowSuccessModal(false);
     });
   };
 
-  const handleResetTestAccount = () => {
-    Alert.alert(
-      'Reset test account?',
-      'Clears the locally-saved account AND coin/offer/withdrawal data for this device. Remove this button before a real release.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Reset', style: 'destructive',
-          onPress: async () => {
-            const deviceId = getDeviceId();
-            await AsyncStorage.removeItem(`account_${deviceId}`);
-            await AsyncStorage.removeItem(`userdata_${deviceId}`);
-            Alert.alert('Done', 'Close and reopen Expo Go to go through Login/Signup again.');
-          },
-        },
-      ]
-    );
-  };
-
-  if (page === 'withdraw') {
-    return <WithdrawScreen navigation={{ goBack: () => setPage('menu') }} />;
-  }
-
-  if (page === 'leaderboard') {
-    return <LeaderboardScreen onBack={() => setPage('menu')} />;
-  }
-
-  if (page === 'transactions') {
-    return (
-      <SubPage title="Transaction history" onBack={() => setPage('menu')}>
-        {completedOffers.length === 0 ? (
-          <Text style={styles.emptyText}>No completed offers yet.</Text>
-        ) : (
-          completedOffers.map(([id, entry], i) => (
-            <FadeInRow key={id} delay={i * 60}>
-              <View style={styles.txRow}>
-                <View style={styles.txIcon}><Ionicons name="arrow-down-circle" size={20} color={colors.success} /></View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.txTitle}>{entry.name}</Text>
-                  <Text style={styles.txSubtitle}>Offer reward</Text>
-                </View>
-                <Text style={styles.txAmount}>+{entry.reward}</Text>
-              </View>
-            </FadeInRow>
-          ))
-        )}
-      </SubPage>
-    );
-  }
-
-  if (page === 'withdrawals') {
-    return (
-      <SubPage title="Withdrawal history" onBack={() => setPage('menu')}>
-        <Text style={styles.subHeading}>Pending</Text>
-        {pendingWithdrawals.length === 0 ? (
-          <Text style={styles.emptyText}>No pending withdrawals.</Text>
-        ) : (
-          pendingWithdrawals.map((w) => (
-            <View key={w.id} style={styles.txRow}>
-              <View style={[styles.txIcon, { backgroundColor: colors.warningBg }]}><Ionicons name="time-outline" size={18} color={colors.warning} /></View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.txTitle}>{w.method.toUpperCase()} withdrawal</Text>
-                <Text style={styles.txSubtitle}>{new Date(w.date).toLocaleDateString()}</Text>
-              </View>
-              <Text style={styles.txAmountNeutral}>-{w.amount}</Text>
-              <TouchableOpacity style={styles.devBtnSmall} onPress={() => completeWithdrawal(w.id)}>
-                <Text style={styles.devBtnSmallText}>Mark paid</Text>
-              </TouchableOpacity>
-            </View>
-          ))
-        )}
-        <Text style={styles.subHeading}>Successful</Text>
-        {successfulWithdrawals.length === 0 ? (
-          <Text style={styles.emptyText}>No successful withdrawals yet.</Text>
-        ) : (
-          successfulWithdrawals.map((w) => (
-            <View key={w.id} style={styles.txRow}>
-              <View style={[styles.txIcon, { backgroundColor: colors.successBg }]}><Ionicons name="checkmark-circle" size={18} color={colors.success} /></View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.txTitle}>{w.method.toUpperCase()} withdrawal</Text>
-                <Text style={styles.txSubtitle}>{new Date(w.date).toLocaleDateString()}</Text>
-              </View>
-              <Text style={styles.txAmountNeutral}>-{w.amount}</Text>
-            </View>
-          ))
-        )}
-      </SubPage>
-    );
-  }
-
-  if (page === 'faqs') {
-    return (
-      <SubPage title="FAQs" onBack={() => setPage('menu')}>
-        {FAQS.map((item, i) => <FaqItem key={i} question={item.q} answer={item.a} />)}
-      </SubPage>
-    );
-  }
-
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={{ paddingBottom: 60 }}>
-      <Animated.View style={{ opacity: fade, transform: [{ translateY }] }}>
-        <View style={styles.userCard}>
-          <View style={styles.avatar}><Text style={styles.avatarLetter}>{(account?.name || 'F')[0].toUpperCase()}</Text></View>
-          <Text style={styles.userName}>{account?.name || 'Friend'}</Text>
-          <Text style={styles.userEmail}>{account?.email || ''}</Text>
-          <View style={styles.detailsRow}>
-            <DetailChip icon="call-outline" label={account?.mobile || '—'} />
-            <DetailChip icon="calendar-outline" label={account?.dob || '—'} />
+    <SafeAreaView style={styles.container}>
+      <Animated.View style={[styles.fullScreenContainer, { opacity: fadeAnim }]}>
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          
+          {/* Top Header */}
+          <View style={styles.header}>
+            <TouchableOpacity 
+              onPress={() => navigation.goBack()} 
+              style={styles.backButton}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="arrow-back" size={20} color="#1A1A1A" />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>My Profile</Text>
+            <TouchableOpacity 
+              style={styles.editToggleBtn}
+              onPress={() => setIsEditing(!isEditing)}
+            >
+              <Ionicons name={isEditing ? "close" : "create-outline"} size={18} color="#FF3E86" />
+              <Text style={styles.editToggleText}>{isEditing ? "Cancel" : "Edit"}</Text>
+            </TouchableOpacity>
           </View>
-          {account?.referralCode && <DetailChip icon="pricetag-outline" label={`Referred by ${account.referralCode}`} full />}
-        </View>
 
-        <View style={styles.statsRow}>
-          <View style={styles.statBox}>
-            <Text style={styles.statValue}>{totalEarned.toFixed(2)}</Text>
-            <Text style={styles.statLabel}>Total Earned</Text>
+          {/* Animated Profile Avatar Card */}
+          <View style={styles.profileCard}>
+            <Animated.View style={[styles.floatingCircle1, { transform: [{ translateY: floatValue }] }]} />
+            <Animated.View style={[styles.floatingCircle2, { transform: [{ translateY: Animated.multiply(floatValue, -1) }] }]} />
+
+            <Animated.View style={{ transform: [{ scale: bounceValue }] }}>
+              <View style={styles.avatarCircle}>
+                <Ionicons name="paw" size={40} color="#FF3E86" />
+              </View>
+            </Animated.View>
+
+            <Text style={styles.profileNameText}>{name}</Text>
+            <Text style={styles.profileEmailText}>{email}</Text>
+            
+            <View style={styles.levelBadge}>
+              <Ionicons name="star" size={14} color="#FFD700" style={{ marginRight: 4 }} />
+              <Text style={styles.levelBadgeText}>VIP Rewards Member</Text>
+            </View>
           </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statBox}>
-            <Text style={styles.statValue}>{totalWithdrawn.toFixed(2)}</Text>
-            <Text style={styles.statLabel}>Total Withdrawn</Text>
+
+          {/* Edit Form Section */}
+          <View style={styles.formContainer}>
+            <Text style={styles.sectionTitle}>Account Settings</Text>
+
+            {/* Name Field */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Full Name</Text>
+              <View style={[styles.inputWrapper, isEditing && styles.inputWrapperActive]}>
+                <Ionicons name="person-outline" size={18} color="#666" style={styles.inputIcon} />
+                <TextInput
+                  style={styles.textInput}
+                  value={name}
+                  onChangeText={setName}
+                  editable={isEditing}
+                  placeholder="Enter name"
+                  placeholderTextColor="#aaa"
+                />
+              </View>
+            </View>
+
+            {/* Email Field (Locked / Read-only) */}
+            <View style={styles.inputGroup}>
+              <View style={styles.labelRow}>
+                <Text style={styles.inputLabel}>Email Address</Text>
+                <Text style={styles.lockedText}><Ionicons name="lock-closed" size={10} /> Cannot be changed</Text>
+              </View>
+              <View style={[styles.inputWrapper, styles.inputLocked]}>
+                <Ionicons name="mail-outline" size={18} color="#999" style={styles.inputIcon} />
+                <TextInput
+                  style={[styles.textInput, { color: '#888' }]}
+                  value={email}
+                  editable={false}
+                />
+              </View>
+            </View>
+
+            {/* Password Field */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Password</Text>
+              <View style={[styles.inputWrapper, isEditing && styles.inputWrapperActive]}>
+                <Ionicons name="lock-closed-outline" size={18} color="#666" style={styles.inputIcon} />
+                <TextInput
+                  style={styles.textInput}
+                  value={password}
+                  onChangeText={setPassword}
+                  editable={isEditing}
+                  secureTextEntry={!isEditing}
+                  placeholder="Enter new password"
+                  placeholderTextColor="#aaa"
+                />
+              </View>
+            </View>
+
+            {/* Save Button (Visible only when editing) */}
+            {isEditing && (
+              <Animated.View style={{ transform: [{ scale: pulseValue }], marginTop: 10 }}>
+                <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
+                  <Text style={styles.saveButtonText}>Save Changes</Text>
+                  <Ionicons name="checkmark-circle" size={18} color="#FFFFFF" style={{ marginLeft: 6 }} />
+                </TouchableOpacity>
+              </Animated.View>
+            )}
           </View>
-        </View>
 
-        <TouchableOpacity style={styles.withdrawBtn} activeOpacity={0.85} onPress={() => setPage('withdraw')}>
-          <Ionicons name="wallet-outline" size={18} color={colors.white} />
-          <Text style={styles.withdrawText}>Withdraw</Text>
-        </TouchableOpacity>
+          {/* Quick Menu Links (Withdrawal History / Offer Status) */}
+          <View style={styles.menuSection}>
+            <TouchableOpacity 
+              style={styles.menuItem}
+              onPress={() => navigation.navigate('My Offers')}
+              activeOpacity={0.7}
+            >
+              <View style={styles.menuIconBox}>
+                <Ionicons name="time-outline" size={20} color="#FF3E86" />
+              </View>
+              <Text style={styles.menuText}>Offer Status & Withdrawal History</Text>
+              <Ionicons name="chevron-forward" size={18} color="#999" />
+            </TouchableOpacity>
 
-        <View style={styles.menuList}>
-          <MenuRow icon="receipt-outline" label="Transaction history" onPress={() => setPage('transactions')} />
-          <MenuRow icon="card-outline" label="Withdrawal history" onPress={() => setPage('withdrawals')} />
-          <MenuRow icon="trophy-outline" label="Leaderboard" onPress={() => setPage('leaderboard')} />
-          <MenuRow icon="help-circle-outline" label="FAQs" onPress={() => setPage('faqs')} />
-          <MenuRow icon="mail-outline" label="Contact us" onPress={handleContactUs} last />
-        </View>
+            <TouchableOpacity 
+              style={styles.menuItem}
+              onPress={() => navigation.navigate('Withdraw')}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.menuIconBox, { backgroundColor: '#E3F2FD' }]}>
+                <Ionicons name="wallet-outline" size={20} color="#0052FF" />
+              </View>
+              <Text style={styles.menuText}>Withdraw Earnings (UPI / Bank)</Text>
+              <Ionicons name="chevron-forward" size={18} color="#999" />
+            </TouchableOpacity>
+          </View>
 
-        <TouchableOpacity style={styles.devBtn} onPress={handleResetTestAccount}>
-          <Ionicons name="refresh-outline" size={16} color={colors.textMuted} />
-          <Text style={styles.devBtnText}>Reset test account (dev only)</Text>
-        </TouchableOpacity>
+        </ScrollView>
       </Animated.View>
-    </ScrollView>
-  );
-}
 
-function SubPage({ title, onBack, children }) {
-  const fade = useRef(new Animated.Value(0)).current;
-  useEffect(() => {
-    Animated.timing(fade, { toValue: 1, duration: 350, useNativeDriver: true }).start();
-  }, []);
+      {/* Success Modal */}
+      <Modal visible={showSuccessModal} transparent={true} animationType="fade">
+        <View style={styles.modalOverlay}>
+          <Animated.View style={[styles.modalContent, { transform: [{ scale: modalScale }] }]}>
+            <View style={styles.successIconBg}>
+              <Ionicons name="checkmark-circle" size={70} color="#27ae60" />
+            </View>
+            <Text style={styles.modalTitle}>Profile Updated!</Text>
+            <Text style={styles.modalDesc}>Your profile info has been successfully updated.</Text>
+            <TouchableOpacity style={styles.modalCloseBtn} onPress={closeModal}>
+              <Text style={styles.modalCloseText}>Awesome</Text>
+            </TouchableOpacity>
+          </Animated.View>
+        </View>
+      </Modal>
 
-  return (
-    <ScrollView style={styles.screen} contentContainerStyle={{ paddingBottom: 40 }}>
-      <View style={styles.subHeader}>
-        <TouchableOpacity onPress={onBack} style={styles.backBtn}>
-          <Ionicons name="chevron-back" size={22} color={colors.textPrimary} />
-        </TouchableOpacity>
-        <Text style={styles.subHeaderTitle}>{title}</Text>
-      </View>
-      <Animated.View style={{ opacity: fade }}>{children}</Animated.View>
-    </ScrollView>
-  );
-}
-
-function MenuRow({ icon, label, onPress, last }) {
-  return (
-    <TouchableOpacity style={[styles.menuRow, !last && styles.menuRowBorder]} activeOpacity={0.7} onPress={onPress}>
-      <Ionicons name={icon} size={20} color={colors.primary} />
-      <Text style={styles.menuRowLabel}>{label}</Text>
-      <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
-    </TouchableOpacity>
-  );
-}
-
-function DetailChip({ icon, label, full }) {
-  return (
-    <View style={[styles.chip, full && { width: '100%', marginTop: spacing.xs }]}>
-      <Ionicons name={icon} size={14} color={colors.textSecondary} />
-      <Text style={styles.chipText}>{label}</Text>
-    </View>
-  );
-}
-
-function FadeInRow({ children, delay = 0 }) {
-  const fade = useRef(new Animated.Value(0)).current;
-  useEffect(() => {
-    Animated.timing(fade, { toValue: 1, duration: 350, delay, useNativeDriver: true }).start();
-  }, []);
-  return <Animated.View style={{ opacity: fade }}>{children}</Animated.View>;
-}
-
-function FaqItem({ question, answer }) {
-  const [open, setOpen] = useState(false);
-  const rotate = useRef(new Animated.Value(0)).current;
-  const fade = useRef(new Animated.Value(0)).current;
-
-  const toggle = () => {
-    const next = !open;
-    setOpen(next);
-    Animated.timing(rotate, { toValue: next ? 1 : 0, duration: 220, useNativeDriver: true }).start();
-    Animated.timing(fade, { toValue: next ? 1 : 0, duration: next ? 250 : 120, useNativeDriver: true }).start();
-  };
-
-  const rotateDeg = rotate.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '180deg'] });
-
-  return (
-    <View style={styles.faqCard}>
-      <TouchableOpacity style={styles.faqHeader} activeOpacity={0.7} onPress={toggle}>
-        <Text style={styles.faqQuestion}>{question}</Text>
-        <Animated.View style={{ transform: [{ rotate: rotateDeg }] }}>
-          <Ionicons name="chevron-down" size={18} color={colors.textSecondary} />
-        </Animated.View>
-      </TouchableOpacity>
-      {open && <Animated.Text style={[styles.faqAnswer, { opacity: fade }]}>{answer}</Animated.Text>}
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.background },
-  subHeader: { flexDirection: 'row', alignItems: 'center', paddingTop: spacing.lg + 20, paddingHorizontal: spacing.md, paddingBottom: spacing.md },
-  backBtn: { width: 40, height: 40, borderRadius: radius.md, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', marginRight: spacing.md },
-  subHeaderTitle: { ...typography.h1, fontSize: 20, color: colors.textPrimary },
-  userCard: { alignItems: 'center', backgroundColor: colors.surface, margin: spacing.md, marginTop: spacing.lg + 20, borderRadius: radius.lg, padding: spacing.lg },
-  avatar: { width: 72, height: 72, borderRadius: 36, backgroundColor: colors.primaryLight, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.sm },
-  avatarLetter: { ...typography.h1, color: colors.primary },
-  userName: { ...typography.h2, color: colors.textPrimary },
-  userEmail: { ...typography.small, color: colors.textSecondary, marginTop: 2 },
-  detailsRow: { flexDirection: 'row', marginTop: spacing.md, flexWrap: 'wrap', justifyContent: 'center' },
-  chip: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.background, borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 6, margin: 4 },
-  chipText: { ...typography.small, color: colors.textSecondary, marginLeft: 6 },
-  statsRow: { flexDirection: 'row', backgroundColor: colors.surface, marginHorizontal: spacing.md, borderRadius: radius.lg, padding: spacing.md },
-  statBox: { flex: 1, alignItems: 'center' },
-  statValue: { ...typography.h1, fontSize: 20, color: colors.textPrimary },
-  statLabel: { ...typography.small, color: colors.textSecondary, marginTop: 2 },
-  statDivider: { width: 1, backgroundColor: colors.border },
-  withdrawBtn: { flexDirection: 'row', alignSelf: 'center', alignItems: 'center', backgroundColor: colors.primary, borderRadius: radius.pill, paddingVertical: 12, paddingHorizontal: 28, marginTop: spacing.md },
-  withdrawText: { color: colors.white, ...typography.label, marginLeft: 8 },
-  menuList: { backgroundColor: colors.surface, borderRadius: radius.lg, marginHorizontal: spacing.md, marginTop: spacing.lg },
-  menuRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 14, paddingHorizontal: spacing.md },
-  menuRowBorder: { borderBottomWidth: 1, borderBottomColor: colors.border },
-  menuRowLabel: { ...typography.label, color: colors.textPrimary, flex: 1, marginLeft: spacing.sm },
-  subHeading: { ...typography.label, color: colors.textSecondary, marginHorizontal: spacing.md, marginTop: spacing.sm, marginBottom: spacing.xs },
-  emptyText: { ...typography.small, color: colors.textMuted, marginHorizontal: spacing.md },
-  txRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.sm, marginHorizontal: spacing.md, marginBottom: spacing.xs },
-  txIcon: { width: 34, height: 34, borderRadius: radius.sm, backgroundColor: colors.successBg, alignItems: 'center', justifyContent: 'center', marginRight: spacing.sm },
-  txTitle: { ...typography.label, color: colors.textPrimary, fontSize: 13 },
-  txSubtitle: { ...typography.small, color: colors.textMuted, marginTop: 1 },
-  txAmount: { ...typography.label, color: colors.success },
-  txAmountNeutral: { ...typography.label, color: colors.textSecondary, marginRight: spacing.xs },
-  devBtnSmall: { backgroundColor: colors.border, borderRadius: radius.sm, paddingHorizontal: 8, paddingVertical: 5, marginLeft: spacing.xs },
-  devBtnSmallText: { ...typography.small, fontSize: 10, color: colors.textSecondary },
-  faqCard: { backgroundColor: colors.surface, borderRadius: radius.md, marginHorizontal: spacing.md, marginBottom: spacing.xs, padding: spacing.md },
-  faqHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  faqQuestion: { ...typography.label, color: colors.textPrimary, flex: 1, marginRight: spacing.sm },
-  faqAnswer: { ...typography.small, color: colors.textSecondary, marginTop: spacing.sm, lineHeight: 19 },
-  devBtn: { flexDirection: 'row', alignSelf: 'center', alignItems: 'center', marginTop: spacing.xl, padding: spacing.sm },
-  devBtnText: { ...typography.small, color: colors.textMuted, marginLeft: 6, textDecorationLine: 'underline' },
+  container: {
+    flex: 1,
+    backgroundColor: '#FFF0F5', // White-Pink Theme
+  },
+  fullScreenContainer: {
+    flex: 1,
+  },
+  scrollContent: {
+    padding: 16,
+    paddingTop: 45,
+    paddingBottom: 40,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  backButton: {
+    width: 38, height: 38, borderRadius: 19, backgroundColor: '#FFFFFF',
+    justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#FFE4E1',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 2,
+  },
+  headerTitle: {
+    fontSize: 22, fontWeight: '900', color: '#1A1A1A',
+  },
+  editToggleBtn: {
+    flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF',
+    paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16,
+    borderWidth: 1, borderColor: '#FFE4E1',
+  },
+  editToggleText: {
+    color: '#FF3E86', fontWeight: 'bold', fontSize: 12, marginLeft: 4,
+  },
+  profileCard: {
+    backgroundColor: '#FF3E86', borderRadius: 24, padding: 24, alignItems: 'center',
+    marginBottom: 24, overflow: 'hidden', shadowColor: '#FF3E86',
+    shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.3, shadowRadius: 10, elevation: 6,
+  },
+  floatingCircle1: {
+    position: 'absolute', top: -30, left: -20, width: 100, height: 100, borderRadius: 50,
+    backgroundColor: 'rgba(255, 215, 0, 0.2)',
+  },
+  floatingCircle2: {
+    position: 'absolute', bottom: -40, right: -20, width: 120, height: 120, borderRadius: 60,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+  },
+  avatarCircle: {
+    width: 76, height: 76, borderRadius: 38, backgroundColor: '#FFFFFF',
+    justifyContent: 'center', alignItems: 'center', marginBottom: 12,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 6, elevation: 4,
+  },
+  profileNameText: {
+    fontSize: 20, fontWeight: '900', color: '#FFFFFF', marginBottom: 2,
+  },
+  profileEmailText: {
+    fontSize: 13, color: '#FFE4E1', marginBottom: 12,
+  },
+  levelBadge: {
+    flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.15)',
+    paddingHorizontal: 12, paddingVertical: 5, borderRadius: 12,
+  },
+  levelBadgeText: {
+    color: '#FFD700', fontWeight: 'bold', fontSize: 11,
+  },
+  formContainer: {
+    backgroundColor: '#FFFFFF', borderRadius: 24, padding: 20, marginBottom: 20,
+    borderWidth: 1, borderColor: '#FFE4E1', shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 6, elevation: 2,
+  },
+  sectionTitle: {
+    fontSize: 16, fontWeight: 'bold', color: '#1A1A1A', marginBottom: 16,
+  },
+  inputGroup: {
+    marginBottom: 16,
+  },
+  labelRow: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6,
+  },
+  inputLabel: {
+    fontSize: 12, fontWeight: 'bold', color: '#666666', marginLeft: 4,
+  },
+  lockedText: {
+    fontSize: 10, color: '#999999', fontWeight: '600',
+  },
+  inputWrapper: {
+    flexDirection: 'row', alignItems: 'center', backgroundColor: '#F8F9FA',
+    borderRadius: 14, borderWidth: 1, borderColor: '#EEEEEE', paddingHorizontal: 14,
+  },
+  inputWrapperActive: {
+    borderColor: '#FF3E86', backgroundColor: '#FFFFFF',
+  },
+  inputLocked: {
+    backgroundColor: '#F1F5F9', borderColor: '#E2E8F0',
+  },
+  inputIcon: {
+    marginRight: 10,
+  },
+  textInput: {
+    flex: 1, paddingVertical: 12, fontSize: 14, color: '#1A1A1A',
+  },
+  saveButton: {
+    flexDirection: 'row', backgroundColor: '#FF3E86', paddingVertical: 14,
+    borderRadius: 20, justifyContent: 'center', alignItems: 'center',
+    shadowColor: '#FF3E86', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 6, elevation: 4,
+  },
+  saveButtonText: {
+    color: '#FFFFFF', fontSize: 15, fontWeight: 'bold',
+  },
+  menuSection: {
+    marginBottom: 20,
+  },
+  menuItem: {
+    flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF',
+    padding: 16, borderRadius: 18, marginBottom: 12, borderWidth: 1, borderColor: '#FFE4E1',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 4, elevation: 2,
+  },
+  menuIconBox: {
+    width: 40, height: 40, borderRadius: 20, backgroundColor: '#FFE4E1',
+    justifyContent: 'center', alignItems: 'center', marginRight: 14,
+  },
+  menuText: {
+    flex: 1, fontSize: 14, fontWeight: 'bold', color: '#1A1A1A',
+  },
+  modalOverlay: {
+    flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20,
+  },
+  modalContent: {
+    backgroundColor: '#FFFFFF', borderRadius: 26, padding: 28, width: '100%', alignItems: 'center',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.2, shadowRadius: 15, elevation: 8,
+  },
+  successIconBg: {
+    width: 80, height: 80, borderRadius: 40, backgroundColor: '#E8F5E9',
+    justifyContent: 'center', alignItems: 'center', marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 20, fontWeight: '900', color: '#1A1A1A', marginBottom: 8, textAlign: 'center',
+  },
+  modalDesc: {
+    fontSize: 13, color: '#666666', textAlign: 'center', marginBottom: 20, lineHeight: 18,
+  },
+  modalCloseBtn: {
+    backgroundColor: '#FF3E86', paddingVertical: 12, paddingHorizontal: 40, borderRadius: 20, width: '100%', alignItems: 'center',
+  },
+  modalCloseText: {
+    color: '#FFFFFF', fontSize: 15, fontWeight: 'bold',
+  },
 });
+  
