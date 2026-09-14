@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import HomeScreen from '../screens/HomeScreen';
 import OffersScreen from '../screens/OffersScreen';
 import ReferScreen from '../screens/ReferScreen';
-import WithdrawScreen from '../screens/WithdrawScreen'; // Replaced MyOffersScreen
+import WithdrawScreen from '../screens/WithdrawScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 
 const Tab = createBottomTabNavigator();
@@ -36,7 +36,6 @@ export default function AppNavigator() {
           } else if (route.name === 'Refer') {
             iconName = focused ? 'gift' : 'gift-outline';
           } else if (route.name === 'WithdrawTab') {
-            // 4th tab now uses a wallet icon pointing to the Withdraw screen
             iconName = focused ? 'wallet' : 'wallet-outline';
           } else if (route.name === 'Profile') {
             iconName = focused ? 'person' : 'person-outline';
@@ -49,7 +48,6 @@ export default function AppNavigator() {
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="Offers" component={OffersScreen} />
       <Tab.Screen name="Refer" component={ReferScreen} />
-      {/* 4th Tab points to WithdrawScreen */}
       <Tab.Screen 
         name="WithdrawTab" 
         component={WithdrawScreen} 
