@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, SafeAreaView, RefreshControl, Dimensions, Modal, Linking, Animated } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, SafeAreaView, RefreshControl, Dimensions, Animated, Modal, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 const { width } = Dimensions.get('window');
@@ -10,55 +10,62 @@ export default function HomeScreen({ navigation }) {
 
   const [balance, setBalance] = useState('3.10');
   
-  // Extended offer data including description and redirect link for backend integration
+  // Detailed offers data matched with screenshot 2 & 3 UI layout
   const [offers, setOffers] = useState([
     { 
       id: '1', 
-      title: 'HDFC Sky', 
-      reward: '50', 
+      title: 'Stocko - Complete KYC', 
+      reward: '500', 
       category: 'Offer Wall', 
-      icon: 'shield-outline',
-      description: 'Open a free demat account with HDFC Sky, complete your KYC verification, and keep the app installed to receive your reward coins instantly.',
-      redirectUrl: 'https://example.com/hdfc-sky-offer' 
+      icon: 'trending-up',
+      status: 'Completed',
+      description: 'Open a demat account and complete your KYC to earn coins.',
+      steps: [
+        'Open the offer and complete its requirements.',
+        'Completed! 500 coins were added to your wallet.'
+      ],
+      redirectUrl: 'https://example.com/stocko-kyc'
     },
     { 
       id: '2', 
-      title: 'Like Prateek Dixit Post', 
-      reward: '1', 
-      category: 'Social', 
-      icon: 'logo-linkedin',
-      description: 'Click on the link below, log into LinkedIn, like Prateek Dixit’s featured post, and return back to verify completion.',
-      redirectUrl: 'https://linkedin.com/in/example-prateek' 
+      title: 'CoinSwitch - Crypto Setup', 
+      reward: '400', 
+      category: 'Crypto', 
+      icon: 'shield-checkmark',
+      status: 'Completed',
+      description: 'Download CoinSwitch, setup your account, and complete basic verification.',
+      steps: [
+        'Register with your phone number and verify KYC.',
+        'Completed! 400 coins added.'
+      ],
+      redirectUrl: 'https://example.com/coinswitch'
     },
     { 
       id: '3', 
-      title: 'Like Rohan Nayak Post', 
-      reward: '1', 
-      category: 'Social', 
-      icon: 'logo-linkedin',
-      description: 'Engage with Rohan Nayak’s latest professional update by giving it a like on LinkedIn.',
-      redirectUrl: 'https://linkedin.com/in/example-rohan' 
-    },
-    { 
-      id: '4', 
-      title: 'Like Vineet Singh Post', 
-      reward: '1', 
-      category: 'Social', 
-      icon: 'logo-linkedin',
-      description: 'Show support by liking Vineet Singh’s post directly through your linked account.',
-      redirectUrl: 'https://linkedin.com/in/example-vineet' 
+      title: 'Parimatch - Sign up', 
+      reward: '650', 
+      category: 'Gaming', 
+      icon: 'football',
+      status: 'Completed',
+      description: 'Sign up on Parimatch and make your first activation deposit.',
+      steps: [
+        'Create a new account on Parimatch.',
+        'Completed! 650 coins credited to balance.'
+      ],
+      redirectUrl: 'https://example.com/parimatch'
     },
   ]);
 
   const [refreshing, setRefreshing] = useState(false);
-  const [selectedOffer, setSelectedOffer] = useState(null);
+  const [selectedOffer, setSelectedOffer] = useState(null); // Full offer detail modal
 
   const bannerScrollRef = useRef(null);
   const [activeBannerIndex, setActiveBannerIndex] = useState(0);
 
-  // Animated values for full-screen entrance and round rotating coin animation
+  // Animated values for full-screen fade entrance and continuous bouncing/spinning coin
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const spinValue = useRef(new Animated.Value(0)).current;
+  const bounceValue = useRef(new Animated.Value(1)).current;
 
   const banners = [
     { id: '1', title: 'More Coins = Bigger Rewards!', subtitle: 'WIN REWARDS on Qureka Gamez', icon: 'flash', linkText: 'WIN REWARDS' },
@@ -67,22 +74,31 @@ export default function HomeScreen({ navigation }) {
   ];
 
   useEffect(() => {
-    // Full screen fade-in animation
+    // Full screen smooth entrance animation
     Animated.timing(fadeAnim, {
       toValue: 1,
-      duration: 600,
+      duration: 500,
       useNativeDriver: true,
     }).start();
 
-    // Continuous round rotation for the coin icon
+    // Continuous 360-degree rotating coin animation
     Animated.loop(
       Animated.timing(spinValue, {
         toValue: 1,
-        duration: 4000,
+        duration: 3000,
         useNativeDriver: true,
       })
     ).start();
 
+    // Bouncing effect for coin icons
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(bounceValue, { toValue: 1.15, duration: 600, useNativeDriver: true }),
+        Animated.timing(bounceValue, { toValue: 1, duration: 600, useNativeDriver: true })
+      ])
+    ).start();
+
+    // Auto-sliding banner timer that smoothly cycles
     const timer = setInterval(() => {
       setActiveBannerIndex((prevIndex) => {
         const nextIndex = (prevIndex + 1) % banners.length;
@@ -107,19 +123,19 @@ export default function HomeScreen({ navigation }) {
     }, 1000);
   };
 
-  // Theme configuration: Default black-pink ('dark'), toggleable white-pink ('light')
+  // Enforce requested Pink-White theme styling strictly (default black-pink overridden as requested to White-Pink & Pink-Dark accents)
   const isDark = themeMode === 'dark';
   const currentStyles = {
-    container: { backgroundColor: isDark ? '#0B0F19' : '#FFF0F5' },
-    textMain: { color: isDark ? '#FFFFFF' : '#1A1A1A' },
-    textSub: { color: isDark ? '#94A3B8' : '#666666' },
-    cardBg: { backgroundColor: isDark ? '#1E293B' : '#FFFFFF', borderColor: isDark ? '#334155' : '#FFD1DC' },
+    container: { backgroundColor: '#FFF0F5' }, // Strict clean white-pink background
+    textMain: { color: '#1A1A1A' },
+    textSub: { color: '#666666' },
+    cardBg: { backgroundColor: '#FFFFFF', borderColor: '#FFE4E1' },
   };
 
   const handleStartOffer = (url) => {
     setSelectedOffer(null);
     if (url) {
-      Linking.openURL(url).catch((err) => console.error("An error occurred opening the link:", err));
+      Linking.openURL(url).catch((err) => console.error("An error occurred opening link:", err));
     }
   };
 
@@ -131,7 +147,7 @@ export default function HomeScreen({ navigation }) {
           showsVerticalScrollIndicator={false}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#FF3E86" />}
         >
-          {/* Top Header with safe top padding to prevent notification bar collision & working profile navigation */}
+          {/* Top Header with safe spacing from notification bar & working profile redirection */}
           <View style={styles.header}>
             <TouchableOpacity 
               style={styles.headerLeft} 
@@ -149,19 +165,19 @@ export default function HomeScreen({ navigation }) {
 
             <View style={styles.topRightPills}>
               <TouchableOpacity 
-                style={[styles.iconButtonLarge, { backgroundColor: isDark ? '#1E293B' : '#FFFFFF' }]}
+                style={styles.iconButtonLarge}
                 onPress={() => setThemeMode(isDark ? 'light' : 'dark')}
               >
-                <Ionicons name={isDark ? 'moon' : 'sunny'} size={20} color="#FF3E86" />
+                <Ionicons name={isDark ? 'sunny' : 'moon'} size={20} color="#FF3E86" />
               </TouchableOpacity>
 
-              <TouchableOpacity style={[styles.iconButtonLarge, { backgroundColor: isDark ? '#1E293B' : '#FFFFFF' }]}>
+              <TouchableOpacity style={styles.iconButtonLarge}>
                 <Ionicons name="gift" size={20} color="#ff4757" />
               </TouchableOpacity>
               
-              {/* Round Animated Coin Pill */}
-              <View style={[styles.coinPillLarge, { backgroundColor: isDark ? '#1E293B' : '#FFFFFF' }]}>
-                <Animated.View style={{ transform: [{ rotate: spin }] }}>
+              {/* Bouncing Animated Coin Pill */}
+              <View style={styles.coinPillLarge}>
+                <Animated.View style={{ transform: [{ rotate: spin }, { scale: bounceValue }] }}>
                   <View style={styles.roundCoinCircle}>
                     <Ionicons name="logo-bitcoin" size={14} color="#1A1A1A" />
                   </View>
@@ -184,7 +200,7 @@ export default function HomeScreen({ navigation }) {
               }}
             >
               {banners.map((banner, index) => (
-                <View key={banner.id} style={[styles.posterCard, { backgroundColor: isDark ? '#1E293B' : '#FF3E86' }]}>
+                <View key={banner.id} style={styles.posterCard}>
                   <View style={styles.posterTextContent}>
                     <Text style={styles.posterTitle}>{banner.title}</Text>
                     <Text style={styles.posterSubtitle}>{banner.subtitle}</Text>
@@ -214,13 +230,14 @@ export default function HomeScreen({ navigation }) {
             </TouchableOpacity>
           </View>
 
-          {/* Offer Cards with Yellow Coins */}
+          {/* Offer Cards matching Image 2 & 3 with Yellow Bouncing Coins */}
           <View style={styles.offersContainer}>
             {(offers || []).map((item) => (
               <TouchableOpacity 
                 key={item.id} 
                 style={[styles.offerCard, currentStyles.cardBg]}
                 onPress={() => setSelectedOffer(item)}
+                activeOpacity={0.8}
               >
                 <View style={styles.offerLeft}>
                   <View style={styles.offerIconBox}>
@@ -232,8 +249,12 @@ export default function HomeScreen({ navigation }) {
                   </View>
                 </View>
                 <View style={styles.rewardBadge}>
-                  <Ionicons name="logo-bitcoin" size={15} color="#FFD700" style={{ marginRight: 2 }} />
-                  <Text style={styles.rewardTextYellow}>{item.reward}</Text>
+                  <Animated.View style={{ transform: [{ scale: bounceValue }], marginRight: 4 }}>
+                    <View style={styles.roundCoinSmall}>
+                      <Ionicons name="logo-bitcoin" size={10} color="#1A1A1A" />
+                    </View>
+                  </Animated.View>
+                  <Text style={styles.rewardTextYellow}>+{item.reward}</Text>
                 </View>
               </TouchableOpacity>
             ))}
@@ -241,7 +262,7 @@ export default function HomeScreen({ navigation }) {
         </ScrollView>
       </Animated.View>
 
-      {/* Offer Detail Modal */}
+      {/* Full Offer Details Modal matching Screenshot 2 & 3 UI */}
       <Modal
         visible={selectedOffer !== null}
         transparent={true}
@@ -249,29 +270,65 @@ export default function HomeScreen({ navigation }) {
         onRequestClose={() => setSelectedOffer(null)}
       >
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: isDark ? '#1E293B' : '#FFFFFF' }]}>
-            <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitleText, currentStyles.textMain]}>{selectedOffer?.title}</Text>
+          <View style={styles.modalContent}>
+            {/* Top Back / Close Header */}
+            <View style={styles.modalTopRow}>
+              <TouchableOpacity onPress={() => setSelectedOffer(null)} style={styles.modalBackButton}>
+                <Ionicons name="arrow-back" size={20} color="#1A1A1A" />
+              </TouchableOpacity>
               <TouchableOpacity onPress={() => setSelectedOffer(null)}>
-                <Ionicons name="close" size={24} color={isDark ? '#FFF' : '#333'} />
+                <Ionicons name="close" size={24} color="#1A1A1A" />
               </TouchableOpacity>
             </View>
 
-            <View style={styles.modalRewardRow}>
-              <Ionicons name="logo-bitcoin" size={20} color="#FFD700" />
-              <Text style={styles.modalRewardValue}> Reward: {selectedOffer?.reward} Coins</Text>
+            {/* Blue Banner Header inside Modal matching Image 3 */}
+            <View style={styles.modalBlueCard}>
+              <View style={styles.modalBannerCircle}>
+                <Ionicons name={selectedOffer?.icon || 'trending-up'} size={32} color="#0052FF" />
+              </View>
+              <Text style={styles.modalBannerTitle}>{selectedOffer?.title}</Text>
+              <Text style={styles.modalBannerSub}>Complete the steps and earn your reward</Text>
             </View>
 
-            <Text style={[styles.modalDescLabel, currentStyles.textMain]}>Description & Instructions:</Text>
-            <Text style={[styles.modalDescText, currentStyles.textSub]}>
-              {selectedOffer?.description || 'Complete the task instructions carefully to earn your coins reward.'}
+            {/* Reward Summary Pill */}
+            <View style={styles.modalRewardCard}>
+              <View style={styles.modalRewardLeft}>
+                <Animated.View style={{ transform: [{ scale: bounceValue }], marginRight: 6 }}>
+                  <View style={styles.roundCoinMedium}>
+                    <Ionicons name="logo-bitcoin" size={12} color="#1A1A1A" />
+                  </View>
+                </Animated.View>
+                <Text style={styles.modalRewardAmountText}>{selectedOffer?.reward} coins</Text>
+              </View>
+              <View style={styles.completedBadgePill}>
+                <Ionicons name="checkmark-circle" size={14} color="#27ae60" style={{ marginRight: 4 }} />
+                <Text style={styles.completedBadgeText}>Completed</Text>
+              </View>
+            </View>
+
+            {/* About Section */}
+            <Text style={styles.modalSectionHeading}>About this offer</Text>
+            <Text style={styles.modalDescriptionText}>
+              {selectedOffer?.description}
             </Text>
 
+            {/* Offer Steps */}
+            <Text style={styles.modalSectionHeading}>Offer steps</Text>
+            {(selectedOffer?.steps || []).map((step, idx) => (
+              <View key={idx} style={styles.modalStepRow}>
+                <View style={styles.stepCheckCircle}>
+                  <Ionicons name="checkmark" size={12} color="#FFFFFF" />
+                </View>
+                <Text style={styles.modalStepText}>{step}</Text>
+              </View>
+            ))}
+
+            {/* Start Offer Button Redirection */}
             <TouchableOpacity 
-              style={styles.startOfferButton}
+              style={styles.modalStartButton}
               onPress={() => handleStartOffer(selectedOffer?.redirectUrl)}
             >
-              <Text style={styles.startOfferButtonText}>Start Offer</Text>
+              <Text style={styles.modalStartButtonText}>Start Offer</Text>
               <Ionicons name="arrow-forward" size={16} color="#FFFFFF" style={{ marginLeft: 6 }} />
             </TouchableOpacity>
           </View>
@@ -290,7 +347,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 16,
-    paddingTop: 18, // Extra padding to avoid collision with phone notification bar
+    paddingTop: 18,
     paddingBottom: 40,
   },
   header: {
@@ -327,6 +384,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
+    backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 8,
@@ -339,6 +397,7 @@ const styles = StyleSheet.create({
   coinPillLarge: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: '#FFFFFF',
     paddingHorizontal: 10,
     paddingVertical: 7,
     borderRadius: 20,
@@ -361,6 +420,14 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
+  roundCoinSmall: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#FFD700',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   coinPillText: {
     marginLeft: 6,
     fontWeight: 'bold',
@@ -374,6 +441,7 @@ const styles = StyleSheet.create({
     height: 135,
     borderRadius: 16,
     padding: 18,
+    backgroundColor: '#FF3E86',
     flexDirection: 'row',
     justifyContent: 'space-between',
     overflow: 'hidden',
@@ -515,69 +583,52 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'flex-end',
   },
   modalContent: {
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 24,
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    padding: 20,
     paddingBottom: 40,
-    minHeight: 300,
+    maxHeight: '90%',
   },
-  modalHeader: {
+  modalTopRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 14,
   },
-  modalTitleText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  modalRewardRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFF8E1',
-    padding: 10,
-    borderRadius: 10,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#FFE0B2',
-  },
-  modalRewardValue: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#D84315',
-    marginLeft: 6,
-  },
-  modalDescLabel: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    marginBottom: 6,
-  },
-  modalDescText: {
-    fontSize: 13,
-    lineHeight: 18,
-    marginBottom: 24,
-  },
-  startOfferButton: {
-    backgroundColor: '#FF3E86',
-    flexDirection: 'row',
+  modalBackButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#F1F5F9',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 14,
-    borderRadius: 25,
-    shadowColor: '#FF3E86',
+  },
+  modalBlueCard: {
+    backgroundColor: '#0052FF',
+    borderRadius: 20,
+    padding: 24,
+    alignItems: 'center',
+    marginBottom: 16,
+    shadowColor: '#0052FF',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
-    shadowRadius: 6,
+    shadowRadius: 8,
     elevation: 4,
   },
-  startOfferButtonText: {
-    color: '#FFFFFF',
-    fontWeight: 'bold',
-    fontSize: 15,
+  modalBannerCircle: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
   },
-});
-    
+  modalBannerTitle: {
+    color: '#FFFFFF',
+    fontSiz
