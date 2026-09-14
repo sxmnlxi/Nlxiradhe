@@ -61,4 +61,5 @@ export default function AppNavigator() {
       <Stack.Screen name="Leaderboard" component={LeaderboardScreen} />
     </Stack.Navigator>
   );
-  }
+      }
+  
