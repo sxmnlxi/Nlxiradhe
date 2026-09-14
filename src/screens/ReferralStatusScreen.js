@@ -1,86 +1,142 @@
-import React from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, SafeAreaView } from 'react-native';
+import React, { useState, useRef, useEffect } from 'react';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, SafeAreaView, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-export default function ReferralStatusScreen({ navigation }) {
-  // Mock data showing referred users, tasks completed, and coins earned
-  const referredUsersList = [
-    { 
-      id: '1', 
-      name: 'Aarav Sharma', 
-      tasksDone: 'Stocko KYC, CoinSwitch Setup, Parimatch Sign-up, Daily Survey, App Test', 
-      coinsEarned: '+10 Coins' 
-    },
-    { 
-      id: '2', 
-      name: 'Priya Verma', 
-      tasksDone: 'Stocko KYC, CoinSwitch Setup, Parimatch Sign-up, Daily Survey, Social Share', 
-      coinsEarned: '+10 Coins' 
-    },
-    { 
-      id: '3', 
-      name: 'Rahul Gupta', 
-      tasksDone: 'Stocko KYC, CoinSwitch Setup (2 tasks pending completion)', 
-      coinsEarned: '0 Coins (In Progress)' 
-    },
-  ];
+export default function ReferStatusScreen({ navigation }) {
+  // Referral status list containing only user name, coin earned, and task completed status (/5)
+  const [referralsList] = useState([
+    { id: '1', name: 'Aarav Sharma', coinsEarned: '500 Coins', taskStatus: 'Task Completed: 5/5' },
+    { id: '2', name: 'Priya Verma', coinsEarned: '500 Coins', taskStatus: 'Task Completed: 5/5' },
+    { id: '3', name: 'Rahul Gupta', coinsEarned: '300 Coins', taskStatus: 'Task Completed: 3/5' },
+    { id: '4', name: 'Ananya Singh', coinsEarned: '500 Coins', taskStatus: 'Task Completed: 5/5' },
+    { id: '5', name: 'Vikram Malhotra', coinsEarned: '100 Coins', taskStatus: 'Task Completed: 1/5' },
+  ]);
+
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 500,
+      useNativeDriver: true,
+    }).start();
+  }, []);
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={20} color="#1A1A1A" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Referral Status</Text>
-        <View style={{ width: 36 }} />
-      </View>
+      <Animated.View style={[styles.fullScreenContainer, { opacity: fadeAnim }]}>
+        {/* Top Header */}
+        <View style={styles.subHeader}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={20} color="#1A1A1A" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Referral Status</Text>
+          <View style={{ width: 36 }} />
+        </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <Text style={styles.subHeaderInfo}>
-          Track your friends who joined using your code. You earn 10 coins once they complete 5 tasks!
-        </Text>
-
-        {(referredUsersList || []).map((item) => (
-          <View key={item.id} style={styles.statusCard}>
-            <View style={styles.userRow}>
-              <View style={styles.avatarMini}>
-                <Ionicons name="person" size={16} color="#FF3E86" />
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          {/* Referral Status List Cards */}
+          {(referralsList || []).map((item) => (
+            <View key={item.id} style={styles.historyCard}>
+              <View style={styles.userIconBox}>
+                <Ionicons name="person" size={18} color="#FF3E86" />
               </View>
-              <Text style={styles.userName}>{item.name}</Text>
-            </View>
+              
+              <View style={{ flex: 1, marginHorizontal: 12 }}>
+                <Text style={styles.historyTitle}>{item.name}</Text>
+                <Text style={styles.taskStatusText}>{item.taskStatus}</Text>
+              </View>
 
-            <View style={styles.detailsBox}>
-              <Text style={styles.tasksLabel}>Tasks Completed:</Text>
-              <Text style={styles.tasksText}>{item.tasksDone}</Text>
+              <View style={styles.coinBadge}>
+                <Ionicons name="logo-bitcoin" size={12} color="#1A1A1A" style={{ marginRight: 3 }} />
+                <Text style={styles.coinBadgeText}>{item.coinsEarned}</Text>
+              </View>
             </View>
-
-            <View style={styles.coinRewardRow}>
-              <Text style={styles.coinEarnedLabel}>Reward Status:</Text>
-              <Text style={styles.coinEarnedValue}>{item.coinsEarned}</Text>
-            </View>
-          </View>
-        ))}
-      </ScrollView>
+          ))}
+        </ScrollView>
+      </Animated.View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFF0F5' },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, paddingTop: 20 },
-  backButton: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#FFFFFF', justifyContent: 'center', alignItems: 'center', elevation: 2 },
-  headerTitle: { fontSize: 18, fontWeight: 'bold', color: '#1A1A1A' },
-  scrollContent: { padding: 16 },
-  subHeaderInfo: { fontSize: 13, color: '#666666', marginBottom: 16, lineHeight: 18 },
-  statusCard: { backgroundColor: '#FFFFFF', borderRadius: 16, padding: 16, marginBottom: 14, borderWidth: 1, borderColor: '#FFE4E1', elevation: 2 },
-  userRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
-  avatarMini: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#FFF0F5', justifyContent: 'center', alignItems: 'center', marginRight: 10, borderWidth: 1, borderColor: '#FFE4E1' },
-  userName: { fontSize: 15, fontWeight: 'bold', color: '#1A1A1A' },
-  detailsBox: { backgroundColor: '#F8F9FA', padding: 10, borderRadius: 10, marginBottom: 10 },
-  tasksLabel: { fontSize: 11, fontWeight: 'bold', color: '#888888', marginBottom: 2 },
-  tasksText: { fontSize: 12, color: '#333333', lineHeight: 16 },
-  coinRewardRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderTopWidth: 1, borderTopColor: '#F0F0F0', paddingTop: 8 },
-  coinEarnedLabel: { fontSize: 12, fontWeight: '600', color: '#666666' },
-  coinEarnedValue: { fontSize: 13, fontWeight: 'bold', color: '#27ae60' },
+  container: { 
+    flex: 1, 
+    backgroundColor: '#FFF0F5' 
+  },
+  fullScreenContainer: {
+    flex: 1,
+  },
+  subHeader: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    justifyContent: 'space-between', 
+    paddingHorizontal: 16, 
+    paddingTop: 28, 
+    paddingBottom: 12,
+  },
+  backButton: { 
+    width: 36, 
+    height: 36, 
+    borderRadius: 18, 
+    backgroundColor: '#FFFFFF', 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    elevation: 2 
+  },
+  headerTitle: { 
+    fontSize: 18, 
+    fontWeight: 'bold', 
+    color: '#1A1A1A' 
+  },
+  scrollContent: { 
+    padding: 16, 
+    paddingBottom: 40 
+  },
+  historyCard: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    backgroundColor: '#FFFFFF', 
+    padding: 16, 
+    borderRadius: 16, 
+    marginBottom: 12, 
+    borderWidth: 1, 
+    borderColor: '#FFE4E1', 
+    elevation: 2 
+  },
+  userIconBox: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#FFE4E1',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  historyTitle: { 
+    fontSize: 14, 
+    fontWeight: 'bold', 
+    color: '#1A1A1A', 
+    marginBottom: 2 
+  },
+  taskStatusText: { 
+    fontSize: 12, 
+    color: '#666666',
+    fontWeight: '500'
+  },
+  coinBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF8E1',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#FFE0B2',
+  },
+  coinBadgeText: { 
+    fontSize: 12, 
+    fontWeight: 'bold', 
+    color: '#D84315' 
+  },
 });
-    
+            
