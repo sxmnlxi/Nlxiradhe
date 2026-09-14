@@ -6,57 +6,11 @@ const { width } = Dimensions.get('window');
 
 export default function ProfileScreen({ navigation, route }) {
   const [refreshing, setRefreshing] = useState(false);
-  const [activeModal, setActiveModal] = useState(null); // 'withdrawalHistory', 'transactionHistory', 'leaderboardFaqs', 'leaderboard', 'support', 'terms'
-  const [leaderboardTab, setLeaderboardTab] = useState('daily'); // 'daily', 'weekly', 'monthly'
+  const [activeModal, setActiveModal] = useState(null); // Only for FAQs, Support, and Terms modals
 
-  // Check if route params requested opening a specific tab (like withdrawal history from status click)
-  useEffect(() => {
-    if (route?.params?.openModal) {
-      setActiveModal(route.params.openModal);
-    }
-  }, [route?.params]);
-
-  // Animated values for entrance and bouncing coins
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const spinValue = useRef(new Animated.Value(0)).current;
   const bounceValue = useRef(new Animated.Value(1)).current;
-  const leaderboardAnim = useRef(new Animated.Value(0)).current;
-
-  // Mock Data for Leaderboard Top Earners (Daily, Weekly, Monthly)
-  const leaderboardData = {
-    daily: [
-      { rank: 1, name: 'Aarav Sharma', coins: '3,450' },
-      { rank: 2, name: 'Priya Verma', coins: '2,900' },
-      { rank: 3, name: 'Rahul Gupta', coins: '2,650' },
-      { rank: 4, name: 'Sneha Patel', coins: '2,100' },
-      { rank: 5, name: 'Vikram Singh', coins: '1,850' },
-    ],
-    weekly: [
-      { rank: 1, name: 'Priya Verma', coins: '18,400' },
-      { rank: 2, name: 'Aarav Sharma', coins: '16,200' },
-      { rank: 3, name: 'Amit Kumar', coins: '14,900' },
-      { rank: 4, name: 'Neha Roy', coins: '12,500' },
-      { rank: 5, name: 'Rohit Mehra', coins: '11,100' },
-    ],
-    monthly: [
-      { rank: 1, name: 'Rahul Gupta', coins: '65,000' },
-      { rank: 2, name: 'Priya Verma', coins: '59,400' },
-      { rank: 3, name: 'Aarav Sharma', coins: '52,100' },
-      { rank: 4, name: 'Karan Joshi', coins: '48,300' },
-      { rank: 5, name: 'Pooja Reddy', coins: '44,900' },
-    ],
-  };
-
-  const withdrawalHistory = [
-    { id: '1', method: 'UPI (9876543210@paytm)', amount: '₹50', date: 'Aug 18, 2026', status: 'Success' },
-    { id: '2', method: 'Bank Transfer (HDFC***1234)', amount: '₹200', date: 'Aug 02, 2026', status: 'Pending' },
-  ];
-
-  const transactionHistory = [
-    { id: '1', title: 'Stocko - Complete KYC', amount: '+500 Coins', date: 'Aug 20, 2026' },
-    { id: '2', title: 'Referral Bonus (Friend Invite)', amount: '+500 Coins', date: 'Aug 19, 2026' },
-    { id: '3', title: 'CoinSwitch - Crypto Setup', amount: '+400 Coins', date: 'Aug 14, 2026' },
-  ];
 
   const leaderboardFaqs = [
     { q: 'How does the Leaderboard work?', a: 'The leaderboard ranks top users based on total coins earned within each day, week, and month.' },
@@ -86,16 +40,6 @@ export default function ProfileScreen({ navigation, route }) {
       ])
     ).start();
   }, []);
-
-  const openLeaderboardModal = () => {
-    setActiveModal('leaderboard');
-    leaderboardAnim.setValue(0);
-    Animated.timing(leaderboardAnim, {
-      toValue: 1,
-      duration: 400,
-      useNativeDriver: true,
-    }).start();
-  };
 
   const spin = spinValue.interpolate({
     inputRange: [0, 1],
@@ -150,9 +94,17 @@ export default function ProfileScreen({ navigation, route }) {
             </View>
           </View>
 
-          {/* Profile Menu Options */}
+          {/* Profile Menu Options - Navigating to separate screens */}
           <View style={styles.menuContainer}>
-            <TouchableOpacity style={styles.menuItem} onPress={() => setActiveModal('withdrawalHistory')}>
+            <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('EditProfile')}>
+              <View style={styles.menuIconBox}>
+                <Ionicons name="create-outline" size={20} color="#FF3E86" />
+              </View>
+              <Text style={styles.menuText}>Edit Profile</Text>
+              <Ionicons name="chevron-forward" size={18} color="#CCCCCC" />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('WithdrawalHistory')}>
               <View style={styles.menuIconBox}>
                 <Ionicons name="wallet-outline" size={20} color="#FF3E86" />
               </View>
@@ -160,7 +112,7 @@ export default function ProfileScreen({ navigation, route }) {
               <Ionicons name="chevron-forward" size={18} color="#CCCCCC" />
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.menuItem} onPress={() => setActiveModal('transactionHistory')}>
+            <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('TransactionHistory')}>
               <View style={styles.menuIconBox}>
                 <Ionicons name="time-outline" size={20} color="#FF3E86" />
               </View>
@@ -168,8 +120,7 @@ export default function ProfileScreen({ navigation, route }) {
               <Ionicons name="chevron-forward" size={18} color="#CCCCCC" />
             </TouchableOpacity>
 
-            {/* Animated Leaderboard Menu Option */}
-            <TouchableOpacity style={styles.menuItem} onPress={openLeaderboardModal}>
+            <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('Leaderboard')}>
               <View style={styles.menuIconBox}>
                 <Ionicons name="trophy-outline" size={20} color="#FF3E86" />
               </View>
@@ -210,7 +161,7 @@ export default function ProfileScreen({ navigation, route }) {
         </ScrollView>
       </Animated.View>
 
-      {/* Universal Modal */}
+      {/* Modal for FAQs, Support, and Terms only */}
       <Modal
         visible={activeModal !== null}
         transparent={true}
@@ -221,9 +172,6 @@ export default function ProfileScreen({ navigation, route }) {
           <View style={styles.modalContent}>
             <View style={styles.modalTopRow}>
               <Text style={styles.modalTitle}>
-                {activeModal === 'withdrawalHistory' && 'Withdrawal History'}
-                {activeModal === 'transactionHistory' && 'Transaction History'}
-                {activeModal === 'leaderboard' && 'Top Earners Leaderboard'}
                 {activeModal === 'leaderboardFaqs' && 'Leaderboard FAQs'}
                 {activeModal === 'support' && 'Customer Support'}
                 {activeModal === 'terms' && 'Terms & Services'}
@@ -233,93 +181,6 @@ export default function ProfileScreen({ navigation, route }) {
               </TouchableOpacity>
             </View>
 
-            {/* Withdrawal History */}
-            {activeModal === 'withdrawalHistory' && (
-              <ScrollView showsVerticalScrollIndicator={false}>
-                {(withdrawalHistory || []).map((item) => (
-                  <View key={item.id} style={styles.historyCard}>
-                    <View>
-                      <Text style={styles.historyTitle}>{item.method}</Text>
-                      <Text style={styles.historyDate}>{item.date}</Text>
-                    </View>
-                    <View style={{ alignItems: 'flex-end' }}>
-                      <Text style={styles.historyAmount}>{item.amount}</Text>
-                      <Text style={[styles.historyStatus, { color: item.status === 'Success' ? '#27ae60' : '#e67e22' }]}>
-                        {item.status}
-                      </Text>
-                    </View>
-                  </View>
-                ))}
-              </ScrollView>
-            )}
-
-            {/* Transaction History */}
-            {activeModal === 'transactionHistory' && (
-              <ScrollView showsVerticalScrollIndicator={false}>
-                {(transactionHistory || []).map((item) => (
-                  <View key={item.id} style={styles.historyCard}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-                      <View style={{ flex: 1, paddingRight: 8 }}>
-                        <Text style={styles.historyTitle} numberOfLines={1}>{item.title}</Text>
-                        <Text style={styles.historyDate}>{item.date}</Text>
-                      </View>
-                    </View>
-                    <Text style={styles.transactionCoinText}>{item.amount}</Text>
-                  </View>
-                ))}
-              </ScrollView>
-            )}
-
-            {/* Animated Leaderboard Modal (Daily, Weekly, Monthly - Profile Name & Coins only) */}
-            {activeModal === 'leaderboard' && (
-              <Animated.View style={{ opacity: leaderboardAnim, flex: 1 }}>
-                <View style={styles.leaderboardTabRow}>
-                  <TouchableOpacity 
-                    style={[styles.lbTabBtn, leaderboardTab === 'daily' && styles.lbTabActive]}
-                    onPress={() => setLeaderboardTab('daily')}
-                  >
-                    <Text style={[styles.lbTabText, leaderboardTab === 'daily' && styles.lbTextActive]}>Daily</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity 
-                    style={[styles.lbTabBtn, leaderboardTab === 'weekly' && styles.lbTabActive]}
-                    onPress={() => setLeaderboardTab('weekly')}
-                  >
-                    <Text style={[styles.lbTabText, leaderboardTab === 'weekly' && styles.lbTextActive]}>Weekly</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity 
-                    style={[styles.lbTabBtn, leaderboardTab === 'monthly' && styles.lbTabActive]}
-                    onPress={() => setLeaderboardTab('monthly')}
-                  >
-                    <Text style={[styles.lbTabText, leaderboardTab === 'monthly' && styles.lbTextActive]}>Monthly</Text>
-                  </TouchableOpacity>
-                </View>
-
-                <ScrollView showsVerticalScrollIndicator={false}>
-                  {(leaderboardData[leaderboardTab] || []).map((user) => (
-                    <Animated.View 
-                      key={user.rank} 
-                      style={[styles.lbRow, { transform: [{ scale: bounceValue }] }]}
-                    >
-                      <View style={styles.lbRankBox}>
-                        <Text style={styles.lbRankText}>#{user.rank}</Text>
-                      </View>
-                      <View style={styles.lbUserInfo}>
-                        <View style={styles.lbAvatarMini}>
-                          <Ionicons name="person" size={14} color="#FF3E86" />
-                        </View>
-                        <Text style={styles.lbUserName}>{user.name}</Text>
-                      </View>
-                      <View style={styles.lbCoinBadge}>
-                        <Ionicons name="logo-bitcoin" size={12} color="#FFD700" style={{ marginRight: 4 }} />
-                        <Text style={styles.lbCoinText}>{user.coins} Coins</Text>
-                      </View>
-                    </Animated.View>
-                  ))}
-                </ScrollView>
-              </Animated.View>
-            )}
-
-            {/* Leaderboard FAQs */}
             {activeModal === 'leaderboardFaqs' && (
               <ScrollView showsVerticalScrollIndicator={false}>
                 {(leaderboardFaqs || []).map((faq, idx) => (
@@ -331,7 +192,6 @@ export default function ProfileScreen({ navigation, route }) {
               </ScrollView>
             )}
 
-            {/* Customer Support */}
             {activeModal === 'support' && (
               <View>
                 <Text style={styles.supportSubText}>
@@ -347,7 +207,6 @@ export default function ProfileScreen({ navigation, route }) {
               </View>
             )}
 
-            {/* Terms & Services */}
             {activeModal === 'terms' && (
               <ScrollView showsVerticalScrollIndicator={false}>
                 <Text style={styles.termsText}>
@@ -392,25 +251,6 @@ const styles = StyleSheet.create({
   modalContent: { backgroundColor: '#FFFFFF', borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 20, paddingBottom: 40, maxHeight: '85%' },
   modalTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
   modalTitle: { fontSize: 18, fontWeight: 'bold', color: '#1A1A1A' },
-  historyCard: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#F8F9FA', padding: 14, borderRadius: 14, marginBottom: 10, borderWidth: 1, borderColor: '#EEEEEE' },
-  historyTitle: { fontSize: 13, fontWeight: 'bold', color: '#1A1A1A', marginBottom: 2 },
-  historyDate: { fontSize: 11, color: '#666666' },
-  historyAmount: { fontSize: 14, fontWeight: 'bold', color: '#1A1A1A' },
-  historyStatus: { fontSize: 11, fontWeight: 'bold' },
-  transactionCoinText: { fontSize: 13, fontWeight: 'bold', color: '#27ae60' },
-  leaderboardTabRow: { flexDirection: 'row', backgroundColor: '#FFF0F5', borderRadius: 16, padding: 4, marginBottom: 16 },
-  lbTabBtn: { flex: 1, paddingVertical: 8, alignItems: 'center', borderRadius: 12 },
-  lbTabActive: { backgroundColor: '#FF3E86' },
-  lbTabText: { fontSize: 13, fontWeight: '600', color: '#666666' },
-  lbTextActive: { color: '#FFFFFF', fontWeight: 'bold' },
-  lbRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FAFAFA', padding: 12, borderRadius: 14, marginBottom: 10, borderWidth: 1, borderColor: '#EEEEEE' },
-  lbRankBox: { width: 30, alignItems: 'center' },
-  lbRankText: { fontWeight: 'bold', fontSize: 14, color: '#FF3E86' },
-  lbUserInfo: { flex: 1, flexDirection: 'row', alignItems: 'center' },
-  lbAvatarMini: { width: 28, height: 28, borderRadius: 14, backgroundColor: '#FFE4E1', justifyContent: 'center', alignItems: 'center', marginRight: 10 },
-  lbUserName: { fontSize: 14, fontWeight: 'bold', color: '#1A1A1A' },
-  lbCoinBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF8E1', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 10, borderWidth: 1, borderColor: '#FFE0B2' },
-  lbCoinText: { fontSize: 12, fontWeight: 'bold', color: '#D84315' },
   faqCard: { backgroundColor: '#F8F9FA', padding: 14, borderRadius: 14, marginBottom: 10, borderWidth: 1, borderColor: '#EEEEEE' },
   faqQuestion: { fontSize: 13, fontWeight: 'bold', color: '#1A1A1A', marginBottom: 4 },
   faqAnswer: { fontSize: 12, color: '#666666', lineHeight: 16 },
