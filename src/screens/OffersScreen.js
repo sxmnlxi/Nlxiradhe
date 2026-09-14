@@ -13,6 +13,7 @@ import { colors, spacing, radius, typography } from '../theme/colors';
 import { useUserData } from '../context/UserDataContext';
 import AnimatedCoin from '../components/AnimatedCoin';
 import OfferDetailScreen from './OfferDetailScreen';
+import { OFFERS as DEMO_OFFERS } from '../data/offers';
 
 const FILTERS = [
   { key: 'all', label: 'All offers', icon: 'apps-outline' },
