@@ -5,12 +5,10 @@ import { Ionicons } from '@expo/vector-icons';
 const { width } = Dimensions.get('window');
 
 export default function HomeScreen({ navigation }) {
-  // Theme state: default is black-pink ('dark'), toggleable to white-pink ('light')
-  const [themeMode, setThemeMode] = useState('dark'); 
-
+  // Strict White-Pink Theme palette as requested
   const [balance, setBalance] = useState('3.10');
   
-  // Detailed offers data matched with screenshot 2 & 3 UI layout
+  // Detailed offers data with backend integration fields (description, steps, redirectUrl)
   const [offers, setOffers] = useState([
     { 
       id: '1', 
@@ -19,10 +17,11 @@ export default function HomeScreen({ navigation }) {
       category: 'Offer Wall', 
       icon: 'trending-up',
       status: 'Completed',
-      description: 'Open a demat account and complete your KYC to earn coins.',
+      description: 'Open a demat account and complete your KYC verification to earn coins instantly.',
       steps: [
-        'Open the offer and complete its requirements.',
-        'Completed! 500 coins were added to your wallet.'
+        'Open the offer link and register with your details.',
+        'Complete your full video KYC verification.',
+        'Coins will be credited automatically upon confirmation.'
       ],
       redirectUrl: 'https://example.com/stocko-kyc'
     },
@@ -33,10 +32,11 @@ export default function HomeScreen({ navigation }) {
       category: 'Crypto', 
       icon: 'shield-checkmark',
       status: 'Completed',
-      description: 'Download CoinSwitch, setup your account, and complete basic verification.',
+      description: 'Download CoinSwitch, setup your account, and complete basic identity verification.',
       steps: [
-        'Register with your phone number and verify KYC.',
-        'Completed! 400 coins added.'
+        'Register using your mobile number and email.',
+        'Complete PAN and KYC verification.',
+        'Coins credited instantly.'
       ],
       redirectUrl: 'https://example.com/coinswitch'
     },
@@ -50,14 +50,15 @@ export default function HomeScreen({ navigation }) {
       description: 'Sign up on Parimatch and make your first activation deposit.',
       steps: [
         'Create a new account on Parimatch.',
-        'Completed! 650 coins credited to balance.'
+        'Complete the initial activation deposit.',
+        'Reward coins added to wallet.'
       ],
       redirectUrl: 'https://example.com/parimatch'
     },
   ]);
 
   const [refreshing, setRefreshing] = useState(false);
-  const [selectedOffer, setSelectedOffer] = useState(null); // Full offer detail modal
+  const [selectedOffer, setSelectedOffer] = useState(null);
 
   const bannerScrollRef = useRef(null);
   const [activeBannerIndex, setActiveBannerIndex] = useState(0);
@@ -90,10 +91,10 @@ export default function HomeScreen({ navigation }) {
       })
     ).start();
 
-    // Bouncing effect for coin icons
+    // Bouncing effect for coin icons across the screen
     Animated.loop(
       Animated.sequence([
-        Animated.timing(bounceValue, { toValue: 1.15, duration: 600, useNativeDriver: true }),
+        Animated.timing(bounceValue, { toValue: 1.18, duration: 600, useNativeDriver: true }),
         Animated.timing(bounceValue, { toValue: 1, duration: 600, useNativeDriver: true })
       ])
     ).start();
@@ -123,10 +124,9 @@ export default function HomeScreen({ navigation }) {
     }, 1000);
   };
 
-  // Enforce requested Pink-White theme styling strictly (default black-pink overridden as requested to White-Pink & Pink-Dark accents)
-  const isDark = themeMode === 'dark';
+  // Strict White-Pink theme styles
   const currentStyles = {
-    container: { backgroundColor: '#FFF0F5' }, // Strict clean white-pink background
+    container: { backgroundColor: '#FFF0F5' },
     textMain: { color: '#1A1A1A' },
     textSub: { color: '#666666' },
     cardBg: { backgroundColor: '#FFFFFF', borderColor: '#FFE4E1' },
@@ -147,7 +147,7 @@ export default function HomeScreen({ navigation }) {
           showsVerticalScrollIndicator={false}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#FF3E86" />}
         >
-          {/* Top Header with safe spacing from notification bar & working profile redirection */}
+          {/* Top Header with safe top padding to prevent notification bar collision & working profile navigation */}
           <View style={styles.header}>
             <TouchableOpacity 
               style={styles.headerLeft} 
@@ -164,13 +164,6 @@ export default function HomeScreen({ navigation }) {
             </TouchableOpacity>
 
             <View style={styles.topRightPills}>
-              <TouchableOpacity 
-                style={styles.iconButtonLarge}
-                onPress={() => setThemeMode(isDark ? 'light' : 'dark')}
-              >
-                <Ionicons name={isDark ? 'sunny' : 'moon'} size={20} color="#FF3E86" />
-              </TouchableOpacity>
-
               <TouchableOpacity style={styles.iconButtonLarge}>
                 <Ionicons name="gift" size={20} color="#ff4757" />
               </TouchableOpacity>
@@ -199,7 +192,7 @@ export default function HomeScreen({ navigation }) {
                 setActiveBannerIndex(index);
               }}
             >
-              {banners.map((banner, index) => (
+              {banners.map((banner) => (
                 <View key={banner.id} style={styles.posterCard}>
                   <View style={styles.posterTextContent}>
                     <Text style={styles.posterTitle}>{banner.title}</Text>
@@ -230,7 +223,7 @@ export default function HomeScreen({ navigation }) {
             </TouchableOpacity>
           </View>
 
-          {/* Offer Cards matching Image 2 & 3 with Yellow Bouncing Coins */}
+          {/* Offer Cards with Yellow Bouncing Coins */}
           <View style={styles.offersContainer}>
             {(offers || []).map((item) => (
               <TouchableOpacity 
@@ -262,7 +255,7 @@ export default function HomeScreen({ navigation }) {
         </ScrollView>
       </Animated.View>
 
-      {/* Full Offer Details Modal matching Screenshot 2 & 3 UI */}
+      {/* Full Offer Details Modal */}
       <Modal
         visible={selectedOffer !== null}
         transparent={true}
@@ -281,7 +274,7 @@ export default function HomeScreen({ navigation }) {
               </TouchableOpacity>
             </View>
 
-            {/* Blue Banner Header inside Modal matching Image 3 */}
+            {/* Blue Banner Header inside Modal */}
             <View style={styles.modalBlueCard}>
               <View style={styles.modalBannerCircle}>
                 <Ionicons name={selectedOffer?.icon || 'trending-up'} size={32} color="#0052FF" />
@@ -347,7 +340,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 16,
-    paddingTop: 18,
+    paddingTop: 24, // Prevents notification bar overlap
     paddingBottom: 40,
   },
   header: {
@@ -631,4 +624,21 @@ const styles = StyleSheet.create({
   },
   modalBannerTitle: {
     color: '#FFFFFF',
-    fontSiz
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 4,
+    textAlign: 'center',
+  },
+  modalBannerSub: {
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: 12,
+    textAlign: 'center',
+  },
+  modalRewardCard: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#FAFAFA',
+    padding: 14,
+    borderRadius: 14,
+    marginBo
