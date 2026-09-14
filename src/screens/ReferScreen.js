@@ -1,261 +1,437 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, SafeAreaView, RefreshControl, Dimensions, Animated, Modal, Linking } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, SafeAreaView, Animated, Dimensions, Share } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 const { width } = Dimensions.get('window');
 
-export default function ProfileScreen({ navigation, route }) {
-  const [refreshing, setRefreshing] = useState(false);
-  const [activeModal, setActiveModal] = useState(null); // Only for FAQs, Support, and Terms modals
+export default function ReferScreen({ navigation }) {
+  const referCode = 'VERMA7';
+  const referralLink = `https://rewardapp.com/download?ref=${referCode}`;
 
+  const [copiedCode, setCopiedCode] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
+
+  // Animations for ultra-attractive look
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const spinValue = useRef(new Animated.Value(0)).current;
   const bounceValue = useRef(new Animated.Value(1)).current;
-
-  const leaderboardFaqs = [
-    { q: 'How does the Leaderboard work?', a: 'The leaderboard ranks top users based on total coins earned within each day, week, and month.' },
-    { q: 'When are leaderboard rewards distributed?', a: 'Prizes are automatically credited to your wallet at the end of each cycle.' },
-    { q: 'Is there any entry fee?', a: 'No! Participation in the leaderboard is completely free for all active users.' }
-  ];
+  const spinValue = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     Animated.timing(fadeAnim, {
       toValue: 1,
-      duration: 500,
+      duration: 600,
       useNativeDriver: true,
     }).start();
 
     Animated.loop(
-      Animated.timing(spinValue, {
-        toValue: 1,
-        duration: 3000,
-        useNativeDriver: true,
-      })
+      Animated.sequence([
+        Animated.timing(bounceValue, { toValue: 1.15, duration: 600, useNativeDriver: true }),
+        Animated.timing(bounceValue, { toValue: 1, duration: 600, useNativeDriver: true }),
+      ])
     ).start();
 
     Animated.loop(
-      Animated.sequence([
-        Animated.timing(bounceValue, { toValue: 1.15, duration: 600, useNativeDriver: true }),
-        Animated.timing(bounceValue, { toValue: 1, duration: 600, useNativeDriver: true })
-      ])
+      Animated.timing(spinValue, {
+        toValue: 1,
+        duration: 4000,
+        useNativeDriver: true,
+      })
     ).start();
   }, []);
 
   const spin = spinValue.interpolate({
     inputRange: [0, 1],
-    outputRange: ['0deg', '360deg']
+    outputRange: ['0deg', '360deg'],
   });
 
-  const onRefresh = () => {
-    setRefreshing(true);
-    setTimeout(() => {
-      setRefreshing(false);
-    }, 1000);
+  const handleCopyCode = () => {
+    setCopiedCode(true);
+    setTimeout(() => setCopiedCode(false), 2500);
   };
 
-  const handleLogout = () => {
-    navigation.reset({
-      index: 0,
-      routes: [{ name: 'Login' }],
-    });
+  const handleCopyLink = () => {
+    setCopiedLink(true);
+    setTimeout(() => setCopiedLink(false), 2500);
+  };
+
+  const handleShare = async () => {
+    try {
+      await Share.share({
+        message: `🚀 Join the ultimate reward app and start earning! Use my referral code *${referCode}* or click my link to get started: ${referralLink}`,
+      });
+    } catch (error) {
+      console.log('Error sharing:', error);
+    }
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <Animated.View style={[styles.fullScreenAnimatedContainer, { opacity: fadeAnim }]}>
-        <ScrollView 
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#FF3E86" />}
-        >
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          
           {/* Top Header */}
           <View style={styles.header}>
             <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
               <Ionicons name="arrow-back" size={20} color="#1A1A1A" />
             </TouchableOpacity>
-            <Text style={styles.headerTitle}>My Profile</Text>
+            <Text style={styles.headerTitle}>Share & Earn</Text>
             <View style={{ width: 36 }} />
           </View>
 
-          {/* User Info Card */}
-          <View style={styles.profileCard}>
-            <View style={styles.avatarLarge}>
-              <Ionicons name="person" size={36} color="#FF3E86" />
-            </View>
-            <Text style={styles.profileName}>VERMA</Text>
-            <Text style={styles.profileEmail}>verma.user@rewardapp.com</Text>
-            <View style={styles.walletBadgeRow}>
-              <Animated.View style={{ transform: [{ rotate: spin }, { scale: bounceValue }], marginRight: 6 }}>
-                <View style={styles.roundCoinSmall}>
-                  <Ionicons name="logo-bitcoin" size={10} color="#1A1A1A" />
+          {/* Ultra Colorful Animated Hero Banner */}
+          <View style={styles.heroCard}>
+            <Animated.View style={{ transform: [{ rotate: spin }], position: 'absolute', top: -30, right: -30, opacity: 0.25 }}>
+              <Ionicons name="gift" size={160} color="#FFFFFF" />
+            </Animated.View>
+            <View style={styles.heroBadgeRow}>
+              <Animated.View style={{ transform: [{ scale: bounceValue }], marginRight: 6 }}>
+                <View style={styles.roundCoinCircle}>
+                  <Ionicons name="logo-bitcoin" size={12} color="#1A1A1A" />
                 </View>
               </Animated.View>
-              <Text style={styles.walletBadgeText}>Balance: 1,400 Coins</Text>
+              <Text style={styles.heroBadgeText}>EARN 10 COINS PER REFERRAL</Text>
             </View>
+            <Text style={styles.heroTitle}>Invite Friends & Grow Your Wallet!</Text>
+            <Text style={styles.heroSubtitle}>
+              Share your link. Once your friend joins and completes 5 different tasks, 10 coins are credited instantly to your account!
+            </Text>
           </View>
 
-          {/* Profile Menu Options - Navigating to separate screens */}
-          <View style={styles.menuContainer}>
-            <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('EditProfile')}>
-              <View style={styles.menuIconBox}>
-                <Ionicons name="create-outline" size={20} color="#FF3E86" />
-              </View>
-              <Text style={styles.menuText}>Edit Profile</Text>
-              <Ionicons name="chevron-forward" size={18} color="#CCCCCC" />
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('WithdrawalHistory')}>
-              <View style={styles.menuIconBox}>
-                <Ionicons name="wallet-outline" size={20} color="#FF3E86" />
-              </View>
-              <Text style={styles.menuText}>Withdrawal History</Text>
-              <Ionicons name="chevron-forward" size={18} color="#CCCCCC" />
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('TransactionHistory')}>
-              <View style={styles.menuIconBox}>
-                <Ionicons name="time-outline" size={20} color="#FF3E86" />
-              </View>
-              <Text style={styles.menuText}>Transaction History</Text>
-              <Ionicons name="chevron-forward" size={18} color="#CCCCCC" />
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('Leaderboard')}>
-              <View style={styles.menuIconBox}>
-                <Ionicons name="trophy-outline" size={20} color="#FF3E86" />
-              </View>
-              <Text style={styles.menuText}>Leaderboard Top Earners</Text>
-              <Ionicons name="chevron-forward" size={18} color="#CCCCCC" />
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.menuItem} onPress={() => setActiveModal('leaderboardFaqs')}>
-              <View style={styles.menuIconBox}>
-                <Ionicons name="help-circle-outline" size={20} color="#FF3E86" />
-              </View>
-              <Text style={styles.menuText}>Leaderboard FAQs</Text>
-              <Ionicons name="chevron-forward" size={18} color="#CCCCCC" />
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.menuItem} onPress={() => setActiveModal('support')}>
-              <View style={styles.menuIconBox}>
-                <Ionicons name="headset-outline" size={20} color="#FF3E86" />
-              </View>
-              <Text style={styles.menuText}>Customer Support</Text>
-              <Ionicons name="chevron-forward" size={18} color="#CCCCCC" />
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.menuItem} onPress={() => setActiveModal('terms')}>
-              <View style={styles.menuIconBox}>
-                <Ionicons name="document-text-outline" size={20} color="#FF3E86" />
-              </View>
-              <Text style={styles.menuText}>Terms & Services</Text>
-              <Ionicons name="chevron-forward" size={18} color="#CCCCCC" />
-            </TouchableOpacity>
-          </View>
-
-          {/* Logout Button */}
-          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout} activeOpacity={0.8}>
-            <Ionicons name="log-out-outline" size={18} color="#FFFFFF" style={{ marginRight: 8 }} />
-            <Text style={styles.logoutButtonText}>Log Out</Text>
-          </TouchableOpacity>
-        </ScrollView>
-      </Animated.View>
-
-      {/* Modal for FAQs, Support, and Terms only */}
-      <Modal
-        visible={activeModal !== null}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setActiveModal(null)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalTopRow}>
-              <Text style={styles.modalTitle}>
-                {activeModal === 'leaderboardFaqs' && 'Leaderboard FAQs'}
-                {activeModal === 'support' && 'Customer Support'}
-                {activeModal === 'terms' && 'Terms & Services'}
-              </Text>
-              <TouchableOpacity onPress={() => setActiveModal(null)}>
-                <Ionicons name="close" size={24} color="#1A1A1A" />
+          {/* Unique 6-Character Referral Code Box */}
+          <View style={styles.cardSection}>
+            <Text style={styles.sectionLabel}>Your Unique 6-Character Code</Text>
+            <View style={styles.codeBox}>
+              <Text style={styles.codeText}>{referCode}</Text>
+              <TouchableOpacity 
+                style={[styles.copyButton, copiedCode && styles.copiedButtonActive]} 
+                onPress={handleCopyCode}
+                activeOpacity={0.8}
+              >
+                <Ionicons name={copiedCode ? "checkmark-circle" : "copy-outline"} size={16} color="#FFFFFF" style={{ marginRight: 4 }} />
+                <Text style={styles.copyButtonText}>{copiedCode ? 'Copied!' : 'Tap to Copy'}</Text>
               </TouchableOpacity>
             </View>
-
-            {activeModal === 'leaderboardFaqs' && (
-              <ScrollView showsVerticalScrollIndicator={false}>
-                {(leaderboardFaqs || []).map((faq, idx) => (
-                  <View key={idx} style={styles.faqCard}>
-                    <Text style={styles.faqQuestion}>{faq.q}</Text>
-                    <Text style={styles.faqAnswer}>{faq.a}</Text>
-                  </View>
-                ))}
-              </ScrollView>
-            )}
-
-            {activeModal === 'support' && (
-              <View>
-                <Text style={styles.supportSubText}>
-                  Having any issues with your tasks or coin additions? Send us your query directly via email, and our team will assist you promptly.
-                </Text>
-                <TouchableOpacity 
-                  style={styles.emailButton}
-                  onPress={() => Linking.openURL('mailto:support@rewardapp.com?subject=User Support Request')}
-                >
-                  <Ionicons name="mail" size={18} color="#FFFFFF" style={{ marginRight: 8 }} />
-                  <Text style={styles.emailButtonText}>support@rewardapp.com</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-
-            {activeModal === 'terms' && (
-              <ScrollView showsVerticalScrollIndicator={false}>
-                <Text style={styles.termsText}>
-                  Welcome to our platform. Please read these terms carefully before using our services:
-                  {'\n\n'}
-                  • <Text style={{ fontWeight: 'bold' }}>No Cashback Guarantee:</Text> We do not guarantee any fixed cashback or rewards as payouts depend entirely on successful offer completion verified by third-party partner networks.
-                  {'\n\n'}
-                  • <Text style={{ fontWeight: 'bold' }}>No Gambling Promotion:</Text> This application is strictly a safe task-completion and rewarded engagement app. We do not promote, host, or encourage any form of online gambling or betting activities.
-                  {'\n\n'}
-                  • <Text style={{ fontWeight: 'bold' }}>Safe Earning Environment:</Text> All task verifications are audited to maintain a secure ecosystem. Fraudulent attempts or use of multiple device accounts will result in instant account suspension.
-                </Text>
-              </ScrollView>
-            )}
           </View>
-        </View>
-      </Modal>
+
+          {/* Shareable Link Box */}
+          <View style={styles.cardSection}>
+            <Text style={styles.sectionLabel}>Your Direct Share Link (Auto-Applies Code)</Text>
+            <View style={styles.linkBox}>
+              <Text style={styles.linkText} numberOfLines={1}>{referralLink}</Text>
+              <TouchableOpacity 
+                style={[styles.copyIconBtn, copiedLink && styles.copiedButtonActive]} 
+                onPress={handleCopyLink}
+                activeOpacity={0.8}
+              >
+                <Ionicons name={copiedLink ? "checkmark" : "link-outline"} size={18} color="#FF3E86" />
+              </TouchableOpacity>
+            </View>
+            {copiedLink && <Text style={styles.copiedHint}>Link copied to clipboard successfully!</Text>}
+          </View>
+
+          {/* Action Share Button */}
+          <View style={styles.actionButtonRow}>
+            <TouchableOpacity style={styles.shareButton} onPress={handleShare} activeOpacity={0.85}>
+              <Animated.View style={{ transform: [{ scale: bounceValue }], marginRight: 8 }}>
+                <Ionicons name="share-social" size={20} color="#FFFFFF" />
+              </Animated.View>
+              <Text style={styles.shareButtonText}>Share via WhatsApp / Socials</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Rules & Milestone Information Card */}
+          <View style={styles.stepsContainer}>
+            <View style={styles.ruleHeaderRow}>
+              <Ionicons name="shield-checkmark" size={20} color="#27ae60" style={{ marginRight: 6 }} />
+              <Text style={styles.stepsHeaderTitle}>Milestone & Anti-Bot Policy</Text>
+            </View>
+            
+            <View style={styles.stepRow}>
+              <View style={styles.stepIconBox}>
+                <Ionicons name="flash-outline" size={20} color="#FF3E86" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.stepTitle}>1. Successful Referral Rule</Text>
+                <Text style={styles.stepDesc}>A referral is counted as successful only when your referred user completes at least 5 different tasks.</Text>
+              </View>
+            </View>
+
+            <View style={styles.stepRow}>
+              <View style={styles.stepIconBox}>
+                <Ionicons name="wallet-outline" size={20} color="#FF3E86" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.stepTitle}>2. Earn 10 Coins Reward</Text>
+                <Text style={styles.stepDesc}>Get 10 coins automatically credited as soon as your friend finishes their 5 tasks.</Text>
+              </View>
+            </View>
+
+            <View style={styles.stepRow}>
+              <View style={styles.stepIconBox}>
+                <Ionicons name="ban-outline" size={20} color="#e74c3c" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.stepTitle}>3. Strict Anti-Bot Verification</Text>
+                <Text style={styles.stepDesc}>No fake accounts or automated scripts allowed. Fraudulent activities lead to instant account suspension.</Text>
+              </View>
+            </View>
+          </View>
+
+        </ScrollView>
+      </Animated.View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFF0F5' },
-  fullScreenAnimatedContainer: { flex: 1 },
-  scrollContent: { padding: 16, paddingTop: 28, paddingBottom: 40 },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 },
-  backButton: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#FFFFFF', justifyContent: 'center', alignItems: 'center', elevation: 2 },
-  headerTitle: { fontSize: 18, fontWeight: 'bold', color: '#1A1A1A' },
-  profileCard: { backgroundColor: '#FFFFFF', borderRadius: 20, padding: 22, alignItems: 'center', marginBottom: 20, borderWidth: 1, borderColor: '#FFE4E1', elevation: 2 },
-  avatarLarge: { width: 70, height: 70, borderRadius: 35, backgroundColor: '#FFE4E1', justifyContent: 'center', alignItems: 'center', marginBottom: 12 },
-  profileName: { fontSize: 18, fontWeight: 'bold', color: '#1A1A1A', marginBottom: 2 },
-  profileEmail: { fontSize: 12, color: '#666666', marginBottom: 12 },
-  walletBadgeRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF8E1', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, borderWidth: 1, borderColor: '#FFE0B2' },
-  roundCoinSmall: { width: 18, height: 18, borderRadius: 9, backgroundColor: '#FFD700', justifyContent: 'center', alignItems: 'center' },
-  walletBadgeText: { fontSize: 13, fontWeight: 'bold', color: '#D84315' },
-  menuContainer: { backgroundColor: '#FFFFFF', borderRadius: 20, paddingVertical: 8, paddingHorizontal: 16, marginBottom: 24, borderWidth: 1, borderColor: '#FFE4E1', elevation: 2 },
-  menuItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#F8F9FA' },
-  menuIconBox: { width: 36, height: 36, borderRadius: 10, backgroundColor: '#FFF0F5', justifyContent: 'center', alignItems: 'center', marginRight: 14 },
-  menuText: { flex: 1, fontSize: 14, fontWeight: '600', color: '#1A1A1A' },
-  logoutButton: { backgroundColor: '#FF3E86', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', paddingVertical: 14, borderRadius: 25, elevation: 4 },
-  logoutButtonText: { color: '#FFFFFF', fontWeight: 'bold', fontSize: 15 },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-  modalContent: { backgroundColor: '#FFFFFF', borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 20, paddingBottom: 40, maxHeight: '85%' },
-  modalTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-  modalTitle: { fontSize: 18, fontWeight: 'bold', color: '#1A1A1A' },
-  faqCard: { backgroundColor: '#F8F9FA', padding: 14, borderRadius: 14, marginBottom: 10, borderWidth: 1, borderColor: '#EEEEEE' },
-  faqQuestion: { fontSize: 13, fontWeight: 'bold', color: '#1A1A1A', marginBottom: 4 },
-  faqAnswer: { fontSize: 12, color: '#666666', lineHeight: 16 },
-  supportSubText: { fontSize: 13, color: '#666666', lineHeight: 18, marginBottom: 20 },
-  emailButton: { backgroundColor: '#FF3E86', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', paddingVertical: 14, borderRadius: 20, elevation: 3 },
-  emailButtonText: { color: '#FFFFFF', fontWeight: 'bold', fontSize: 14 },
-  termsText: { fontSize: 13, color: '#666666', lineHeight: 20 },
+  container: {
+    flex: 1,
+    backgroundColor: '#FFF0F5',
+  },
+  fullScreenAnimatedContainer: {
+    flex: 1,
+  },
+  scrollContent: {
+    padding: 16,
+    paddingTop: 24,
+    paddingBottom: 40,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+  },
+  backButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1A1A1A',
+  },
+  heroCard: {
+    backgroundColor: '#FF3E86',
+    borderRadius: 24,
+    padding: 24,
+    alignItems: 'center',
+    marginBottom: 24,
+    overflow: 'hidden',
+    elevation: 6,
+    shadowColor: '#FF3E86',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.3)',
+  },
+  heroBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 12,
+    marginBottom: 12,
+  },
+  roundCoinCircle: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#FFD700',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#FFA500',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  heroBadgeText: {
+    color: '#FFD700',
+    fontWeight: '900',
+    fontSize: 11,
+    letterSpacing: 0.5,
+  },
+  heroTitle: {
+    color: '#FFFFFF',
+    fontSize: 20,
+    fontWeight: '900',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  heroSubtitle: {
+    color: '#F8F9FA',
+    fontSize: 13,
+    textAlign: 'center',
+    lineHeight: 18,
+    paddingHorizontal: 4,
+  },
+  cardSection: {
+    marginBottom: 18,
+  },
+  sectionLabel: {
+    fontSize: 13,
+    fontWeight: 'bold',
+    color: '#1A1A1A',
+    marginBottom: 8,
+    marginLeft: 4,
+  },
+  codeBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 8,
+    paddingLeft: 18,
+    borderWidth: 1,
+    borderColor: '#FFE4E1',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+  },
+  codeText: {
+    flex: 1,
+    fontSize: 20,
+    fontWeight: '900',
+    color: '#FF3E86',
+    letterSpacing: 2,
+  },
+  copyButton: {
+    backgroundColor: '#FF3E86',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
+  copiedButtonActive: {
+    backgroundColor: '#27ae60',
+  },
+  copyButtonText: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    fontSize: 13,
+  },
+  linkBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 12,
+    paddingLeft: 16,
+    borderWidth: 1,
+    borderColor: '#FFE4E1',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+  },
+  linkText: {
+    flex: 1,
+    fontSize: 13,
+    color: '#666666',
+    marginRight: 10,
+  },
+  copyIconBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    backgroundColor: '#FFF0F5',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#FFE4E1',
+  },
+  copiedHint: {
+    fontSize: 11,
+    color: '#27ae60',
+    fontWeight: 'bold',
+    marginTop: 4,
+    marginLeft: 4,
+  },
+  actionButtonRow: {
+    marginBottom: 24,
+  },
+  shareButton: {
+    backgroundColor: '#FF3E86',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 16,
+    borderRadius: 25,
+    elevation: 4,
+    shadowColor: '#FF3E86',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+  },
+  shareButtonText: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    fontSize: 15,
+  },
+  stepsContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: '#FFE4E1',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+  },
+  ruleHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  stepsHeaderTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#1A1A1A',
+  },
+  stepRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  stepIconBox: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: '#FFF0F5',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 14,
+    borderWidth: 1,
+    borderColor: '#FFE4E1',
+  },
+  stepTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#1A1A1A',
+    marginBottom: 2,
+  },
+  stepDesc: {
+    fontSize: 12,
+    color: '#666666',
+    lineHeight: 16,
+  },
 });
+  
