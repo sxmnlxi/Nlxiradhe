@@ -11,13 +11,21 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, radius, typography } from '../theme/colors';
 import { useUserData } from '../context/UserDataContext';
+import { OFFERS as DEMO_OFFERS } from '../data/offers';
 import AnimatedCoin from '../components/AnimatedCoin';
 import OfferDetailScreen from './OfferDetailScreen';
-import { OFFERS as DEMO_OFFERS } from '../data/offers';
 
 const FILTERS = [
-  { key: 'all', label: 'All offers', icon: 'apps-outline' },
-  { key: 'pending', label: 'Pending', icon: 'time-outline' },
+  {
+    key: 'all',
+    label: 'All offers',
+    icon: 'apps-outline',
+  },
+  {
+    key: 'pending',
+    label: 'Pending',
+    icon: 'time-outline',
+  },
   {
     key: 'completed',
     label: 'Completed',
@@ -26,17 +34,20 @@ const FILTERS = [
 ];
 
 export default function OffersScreen() {
-  const {
-  offerStatuses = {},
-  offers = [],
-  offersLoading = false,
-  offersError = null,
-  refreshOffers = () => {},
-} = useUserData();
+  const userData = useUserData();
 
-const safeOffers = Array.isArray(offers) && offers.length > 0
-  ? offers
-  : DEMO_OFFERS;
+  const offerStatuses = userData.offerStatuses || {};
+  const contextOffers = Array.isArray(userData.offers)
+    ? userData.offers
+    : [];
+  const offersLoading = Boolean(userData.offersLoading);
+  const offersError = userData.offersError || null;
+  const refreshOffers = userData.refreshOffers || (() => {});
+
+  // If backend offers are not loaded yet, show local demo offers.
+  // This prevents the "length of undefined" crash.
+  const safeOffers =
+    contextOffers.length > 0 ? contextOffers : DEMO_OFFERS;
 
   const [selectedOffer, setSelectedOffer] = useState(null);
   const [filter, setFilter] = useState('all');
@@ -44,35 +55,35 @@ const safeOffers = Array.isArray(offers) && offers.length > 0
 
   const counts = useMemo(() => {
     return {
-      all: offers.length,
-      pending: offers.filter(
+      all: safeOffers.length,
+      pending: safeOffers.filter(
         (offer) => offerStatuses[offer.id]?.status === 'pending'
       ).length,
-      completed: offers.filter(
+      completed: safeOffers.filter(
         (offer) => offerStatuses[offer.id]?.status === 'completed'
       ).length,
     };
-  }, [offerStatuses, offers]);
+  }, [offerStatuses, safeOffers]);
 
   const visibleOffers = useMemo(() => {
-    return offers.filter((offer) => {
-      if (filter === 'all') {
-        return true;
-      }
+    if (filter === 'all') {
+      return safeOffers;
+    }
 
-      return offerStatuses[offer.id]?.status === filter;
-    });
-  }, [filter, offerStatuses, offers]);
+    return safeOffers.filter(
+      (offer) => offerStatuses[offer.id]?.status === filter
+    );
+  }, [filter, offerStatuses, safeOffers]);
 
   const changeFilter = (nextFilter) => {
     setFilter(nextFilter);
 
-    switchScale.setValue(0.96);
+    switchScale.setValue(0.95);
 
     Animated.spring(switchScale, {
       toValue: 1,
       friction: 5,
-      tension: 120,
+      tension: 130,
       useNativeDriver: true,
     }).start();
   };
@@ -105,15 +116,22 @@ const safeOffers = Array.isArray(offers) && offers.length > 0
           style={styles.refreshIcon}
           onPress={refreshOffers}
           disabled={offersLoading}
+          activeOpacity={0.8}
         >
-          <Ionicons name="refresh" size={20} color={colors.primary} />
+          <Ionicons
+            name="refresh"
+            size={20}
+            color={colors.primary}
+          />
         </TouchableOpacity>
       </View>
 
       <Animated.View
         style={[
           styles.filterBar,
-          { transform: [{ scale: switchScale }] },
+          {
+            transform: [{ scale: switchScale }],
+          },
         ]}
       >
         {FILTERS.map((item) => {
@@ -122,7 +140,10 @@ const safeOffers = Array.isArray(offers) && offers.length > 0
           return (
             <TouchableOpacity
               key={item.key}
-              style={[styles.filter, isActive && styles.filterActive]}
+              style={[
+                styles.filter,
+                isActive && styles.filterActive,
+              ]}
               onPress={() => changeFilter(item.key)}
               activeOpacity={0.85}
             >
@@ -135,7 +156,11 @@ const safeOffers = Array.isArray(offers) && offers.length > 0
                 <Ionicons
                   name={item.icon}
                   size={18}
-                  color={isActive ? colors.white : colors.textSecondary}
+                  color={
+                    isActive
+                      ? colors.white
+                      : colors.textSecondary
+                  }
                 />
               </View>
 
@@ -173,8 +198,11 @@ const safeOffers = Array.isArray(offers) && offers.length > 0
         </Text>
       </View>
 
-      {offersLoading && offers.length === 0 ? (
-        <ActivityIndicator color={colors.primary} style={styles.loader} />
+      {offersLoading && contextOffers.length === 0 ? (
+        <ActivityIndicator
+          color={colors.primary}
+          style={styles.loader}
+        />
       ) : null}
 
       {offersError ? (
@@ -199,24 +227,30 @@ const safeOffers = Array.isArray(offers) && offers.length > 0
 }
 
 function EmptyState({ filter }) {
-  const completed = filter === 'completed';
+  const isCompleted = filter === 'completed';
 
   return (
     <View style={styles.emptyCard}>
       <Ionicons
-        name={completed ? 'ribbon-outline' : 'sparkles-outline'}
-        size={30}
+        name={
+          isCompleted
+            ? 'ribbon-outline'
+            : 'sparkles-outline'
+        }
+        size={31}
         color={colors.primary}
       />
 
       <Text style={styles.emptyTitle}>
-        {completed ? 'No completed offers yet' : 'Nothing here yet'}
+        {isCompleted
+          ? 'No completed offers yet'
+          : 'Nothing here yet'}
       </Text>
 
       <Text style={styles.emptyText}>
-        {completed
-          ? 'Finish a pending offer and its reward will appear here.'
-          : 'Start an offer from All offers to see its progress here.'}
+        {isCompleted
+          ? 'Finish a pending offer and its coin reward will appear here.'
+          : 'Start an offer from All offers to see it here.'}
       </Text>
     </View>
   );
@@ -224,20 +258,21 @@ function EmptyState({ filter }) {
 
 function OfferCard({ offer, index, status, onPress }) {
   const opacity = useRef(new Animated.Value(0)).current;
-  const translateY = useRef(new Animated.Value(18)).current;
+  const translateY = useRef(new Animated.Value(20)).current;
 
   useEffect(() => {
     Animated.parallel([
       Animated.timing(opacity, {
         toValue: 1,
         duration: 300,
-        delay: index * 55,
+        delay: index * 60,
         useNativeDriver: true,
       }),
       Animated.spring(translateY, {
         toValue: 0,
-        delay: index * 55,
+        delay: index * 60,
         friction: 8,
+        tension: 90,
         useNativeDriver: true,
       }),
     ]).start();
@@ -275,11 +310,20 @@ function OfferCard({ offer, index, status, onPress }) {
     >
       <TouchableOpacity
         style={styles.offerCard}
-        activeOpacity={0.82}
+        activeOpacity={0.84}
         onPress={onPress}
       >
-        <View style={[styles.logo, { backgroundColor: offer.logoColor }]}>
-          <Ionicons name={offer.icon} size={24} color={colors.white} />
+        <View
+          style={[
+            styles.logo,
+            { backgroundColor: offer.logoColor || colors.primary },
+          ]}
+        >
+          <Ionicons
+            name={offer.icon || 'gift-outline'}
+            size={24}
+            color={colors.white}
+          />
         </View>
 
         <View style={styles.offerContent}>
@@ -292,7 +336,12 @@ function OfferCard({ offer, index, status, onPress }) {
               color={statusColor}
             />
 
-            <Text style={[styles.status, { color: statusColor }]}>
+            <Text
+              style={[
+                styles.status,
+                { color: statusColor },
+              ]}
+            >
               {statusLabel}
             </Text>
           </View>
@@ -321,12 +370,12 @@ const styles = StyleSheet.create({
   content: {
     padding: spacing.md,
     paddingTop: spacing.lg + 20,
-    paddingBottom: 40,
+    paddingBottom: 42,
   },
   headingRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
   },
   title: {
     ...typography.h1,
@@ -366,9 +415,9 @@ const styles = StyleSheet.create({
     width: 30,
     height: 30,
     borderRadius: 15,
+    backgroundColor: colors.background,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.background,
   },
   filterIconActive: {
     backgroundColor: 'rgba(255,255,255,0.18)',
@@ -460,8 +509,8 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   emptyCard: {
-    backgroundColor: colors.surface,
     alignItems: 'center',
+    backgroundColor: colors.surface,
     borderRadius: radius.lg,
     padding: spacing.xl,
     marginTop: spacing.sm,
