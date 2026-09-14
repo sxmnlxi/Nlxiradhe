@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, SafeAreaView, RefreshControl, Dimensions, Modal, Linking } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, SafeAreaView, RefreshControl, Dimensions, Modal, Linking, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 const { width } = Dimensions.get('window');
@@ -51,10 +51,14 @@ export default function HomeScreen({ navigation }) {
   ]);
 
   const [refreshing, setRefreshing] = useState(false);
-  const [selectedOffer, setSelectedOffer] = useState(null); // Modal state for offer details
+  const [selectedOffer, setSelectedOffer] = useState(null);
 
   const bannerScrollRef = useRef(null);
   const [activeBannerIndex, setActiveBannerIndex] = useState(0);
+
+  // Animated values for full-screen entrance and round rotating coin animation
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const spinValue = useRef(new Animated.Value(0)).current;
 
   const banners = [
     { id: '1', title: 'More Coins = Bigger Rewards!', subtitle: 'WIN REWARDS on Qureka Gamez', icon: 'flash', linkText: 'WIN REWARDS' },
@@ -63,6 +67,22 @@ export default function HomeScreen({ navigation }) {
   ];
 
   useEffect(() => {
+    // Full screen fade-in animation
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 600,
+      useNativeDriver: true,
+    }).start();
+
+    // Continuous round rotation for the coin icon
+    Animated.loop(
+      Animated.timing(spinValue, {
+        toValue: 1,
+        duration: 4000,
+        useNativeDriver: true,
+      })
+    ).start();
+
     const timer = setInterval(() => {
       setActiveBannerIndex((prevIndex) => {
         const nextIndex = (prevIndex + 1) % banners.length;
@@ -75,6 +95,11 @@ export default function HomeScreen({ navigation }) {
     return () => clearInterval(timer);
   }, []);
 
+  const spin = spinValue.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg']
+  });
+
   const onRefresh = () => {
     setRefreshing(true);
     setTimeout(() => {
@@ -82,14 +107,13 @@ export default function HomeScreen({ navigation }) {
     }, 1000);
   };
 
-  // Theme configuration for Blue-Pink and White-Pink palette
+  // Theme configuration: Default black-pink ('dark'), toggleable white-pink ('light')
   const isDark = themeMode === 'dark';
   const currentStyles = {
-    container: { backgroundColor: isDark ? '#0B0F19' : '#FFF0F5' }, // Blue-black vs White-pink tint
+    container: { backgroundColor: isDark ? '#0B0F19' : '#FFF0F5' },
     textMain: { color: isDark ? '#FFFFFF' : '#1A1A1A' },
     textSub: { color: isDark ? '#94A3B8' : '#666666' },
     cardBg: { backgroundColor: isDark ? '#1E293B' : '#FFFFFF', borderColor: isDark ? '#334155' : '#FFD1DC' },
-    headerBg: isDark ? '#111827' : '#FFFFFF',
   };
 
   const handleStartOffer = (url) => {
@@ -101,109 +125,121 @@ export default function HomeScreen({ navigation }) {
 
   return (
     <SafeAreaView style={[styles.container, currentStyles.container]}>
-      <ScrollView 
-        contentContainerStyle={styles.scrollContent}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#FF3E86" />}
-      >
-        {/* Top Header matching Image 2 Layout with larger icons */}
-        <View style={styles.header}>
-          <View style={styles.headerLeft}>
-            <View style={styles.avatarContainer}>
-              <Ionicons name="paw" size={26} color="#FF3E86" />
-            </View>
-            <View>
-              <Text style={[styles.welcomeSubText, currentStyles.textSub]}>Welcome back,</Text>
-              <Text style={[styles.welcomeTitle, currentStyles.textMain]}>VERMA</Text>
-            </View>
-          </View>
-
-          <View style={styles.topRightPills}>
+      <Animated.View style={[styles.fullScreenAnimatedContainer, { opacity: fadeAnim }]}>
+        <ScrollView 
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#FF3E86" />}
+        >
+          {/* Top Header with safe top padding to prevent notification bar collision & working profile navigation */}
+          <View style={styles.header}>
             <TouchableOpacity 
-              style={[styles.iconButtonLarge, { backgroundColor: isDark ? '#1E293B' : '#FFFFFF' }]}
-              onPress={() => setThemeMode(isDark ? 'light' : 'dark')}
+              style={styles.headerLeft} 
+              onPress={() => navigation.navigate('Profile')}
+              activeOpacity={0.7}
             >
-              <Ionicons name={isDark ? 'moon' : 'sunny'} size={20} color="#FF3E86" />
+              <View style={styles.avatarContainer}>
+                <Ionicons name="paw" size={26} color="#FF3E86" />
+              </View>
+              <View>
+                <Text style={[styles.welcomeSubText, currentStyles.textSub]}>Welcome back,</Text>
+                <Text style={[styles.welcomeTitle, currentStyles.textMain]}>VERMA</Text>
+              </View>
             </TouchableOpacity>
 
-            <TouchableOpacity style={[styles.iconButtonLarge, { backgroundColor: isDark ? '#1E293B' : '#FFFFFF' }]}>
-              <Ionicons name="gift" size={20} color="#ff4757" />
-            </TouchableOpacity>
-            
-            <View style={[styles.coinPillLarge, { backgroundColor: isDark ? '#1E293B' : '#FFFFFF' }]}>
-              <Ionicons name="logo-bitcoin" size={18} color="#FFD700" />
-              <Text style={[styles.coinPillText, currentStyles.textMain]}>{balance}</Text>
+            <View style={styles.topRightPills}>
+              <TouchableOpacity 
+                style={[styles.iconButtonLarge, { backgroundColor: isDark ? '#1E293B' : '#FFFFFF' }]}
+                onPress={() => setThemeMode(isDark ? 'light' : 'dark')}
+              >
+                <Ionicons name={isDark ? 'moon' : 'sunny'} size={20} color="#FF3E86" />
+              </TouchableOpacity>
+
+              <TouchableOpacity style={[styles.iconButtonLarge, { backgroundColor: isDark ? '#1E293B' : '#FFFFFF' }]}>
+                <Ionicons name="gift" size={20} color="#ff4757" />
+              </TouchableOpacity>
+              
+              {/* Round Animated Coin Pill */}
+              <View style={[styles.coinPillLarge, { backgroundColor: isDark ? '#1E293B' : '#FFFFFF' }]}>
+                <Animated.View style={{ transform: [{ rotate: spin }] }}>
+                  <View style={styles.roundCoinCircle}>
+                    <Ionicons name="logo-bitcoin" size={14} color="#1A1A1A" />
+                  </View>
+                </Animated.View>
+                <Text style={[styles.coinPillText, currentStyles.textMain]}>{balance}</Text>
+              </View>
             </View>
           </View>
-        </View>
 
-        {/* Animated Banner Poster */}
-        <View style={styles.posterContainer}>
-          <ScrollView 
-            ref={bannerScrollRef}
-            horizontal 
-            pagingEnabled 
-            showsHorizontalScrollIndicator={false}
-            onMomentumScrollEnd={(event) => {
-              const index = Math.round(event.nativeEvent.contentOffset.x / (width - 32));
-              setActiveBannerIndex(index);
-            }}
-          >
-            {banners.map((banner, index) => (
-              <View key={banner.id} style={[styles.posterCard, { backgroundColor: isDark ? '#1E293B' : '#FF3E86' }]}>
-                <View style={styles.posterTextContent}>
-                  <Text style={styles.posterTitle}>{banner.title}</Text>
-                  <Text style={styles.posterSubtitle}>{banner.subtitle}</Text>
-                  <TouchableOpacity style={styles.posterActionButton}>
-                    <Text style={styles.posterActionText}>{banner.linkText}</Text>
-                  </TouchableOpacity>
+          {/* Animated Banner Poster */}
+          <View style={styles.posterContainer}>
+            <ScrollView 
+              ref={bannerScrollRef}
+              horizontal 
+              pagingEnabled 
+              showsHorizontalScrollIndicator={false}
+              onMomentumScrollEnd={(event) => {
+                const index = Math.round(event.nativeEvent.contentOffset.x / (width - 32));
+                setActiveBannerIndex(index);
+              }}
+            >
+              {banners.map((banner, index) => (
+                <View key={banner.id} style={[styles.posterCard, { backgroundColor: isDark ? '#1E293B' : '#FF3E86' }]}>
+                  <View style={styles.posterTextContent}>
+                    <Text style={styles.posterTitle}>{banner.title}</Text>
+                    <Text style={styles.posterSubtitle}>{banner.subtitle}</Text>
+                    <TouchableOpacity style={styles.posterActionButton}>
+                      <Text style={styles.posterActionText}>{banner.linkText}</Text>
+                    </TouchableOpacity>
+                  </View>
+                  <View style={styles.posterIconWrapper}>
+                    <Ionicons name="car-sport" size={55} color="#FFD700" />
+                  </View>
                 </View>
-                <View style={styles.posterIconWrapper}>
-                  <Ionicons name="car-sport" size={55} color="#FFD700" />
+              ))}
+            </ScrollView>
+            <View style={styles.paginationDots}>
+              {banners.map((_, i) => (
+                <View key={i} style={[styles.dot, activeBannerIndex === i && styles.activeDot]} />
+              ))}
+            </View>
+          </View>
+
+          {/* Offers Wall Header & Status */}
+          <View style={styles.sectionHeaderRow}>
+            <Text style={[styles.sectionTitle, currentStyles.textMain]}>Offers Wall</Text>
+            <TouchableOpacity style={styles.offerStatusButton}>
+              <Ionicons name="time-outline" size={15} color="#FFFFFF" style={{ marginRight: 4 }} />
+              <Text style={styles.offerStatusText}>Offer Status</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Offer Cards with Yellow Coins */}
+          <View style={styles.offersContainer}>
+            {(offers || []).map((item) => (
+              <TouchableOpacity 
+                key={item.id} 
+                style={[styles.offerCard, currentStyles.cardBg]}
+                onPress={() => setSelectedOffer(item)}
+              >
+                <View style={styles.offerLeft}>
+                  <View style={styles.offerIconBox}>
+                    <Ionicons name={item.icon} size={22} color="#FF3E86" />
+                  </View>
+                  <View style={{ flex: 1, paddingRight: 8 }}>
+                    <Text style={[styles.offerTitle, currentStyles.textMain]} numberOfLines={1}>{item.title}</Text>
+                    <Text style={[styles.offerCategory, currentStyles.textSub]}>{item.category}</Text>
+                  </View>
                 </View>
-              </View>
-            ))}
-          </ScrollView>
-          <View style={styles.paginationDots}>
-            {banners.map((_, i) => (
-              <View key={i} style={[styles.dot, activeBannerIndex === i && styles.activeDot]} />
+                <View style={styles.rewardBadge}>
+                  <Ionicons name="logo-bitcoin" size={15} color="#FFD700" style={{ marginRight: 2 }} />
+                  <Text style={styles.rewardTextYellow}>{item.reward}</Text>
+                </View>
+              </TouchableOpacity>
             ))}
           </View>
-        </View>
-
-        {/* Offers Wall Header & Status */}
-        <View style={styles.sectionHeaderRow}>
-          <Text style={[styles.sectionTitle, currentStyles.textMain]}>Offers Wall</Text>
-          <TouchableOpacity style={styles.offerStatusButton}>
-            <Ionicons name="time-outline" size={15} color="#FFFFFF" style={{ marginRight: 4 }} />
-            <Text style={styles.offerStatusText}>Offer Status</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Offer Cards with Yellow Coins */}
-        <View style={styles.offersContainer}>
-          {(offers || []).map((item) => (
-            <TouchableOpacity 
-              key={item.id} 
-              style={[styles.offerCard, currentStyles.cardBg]}
-              onPress={() => setSelectedOffer(item)}
-            >
-              <View style={styles.offerLeft}>
-                <View style={styles.offerIconBox}>
-                  <Ionicons name={item.icon} size={22} color="#FF3E86" />
-                </View>
-                <View style={{ flex: 1, paddingRight: 8 }}>
-                  <Text style={[styles.offerTitle, currentStyles.textMain]} numberOfLines={1}>{item.title}</Text>
-                  <Text style={[styles.offerCategory, currentStyles.textSub]}>{item.category}</Text>
-                </View>
-              </View>
-              <View style={styles.rewardBadge}>
-                <Ionicons name="logo-bitcoin" size={15} color="#FFD700" style={{ marginRight: 2 }} />
-                <Text style={styles.rewardTextYellow}>{item.reward}</Text>
-              </View>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </ScrollView>
+        </ScrollView>
+      </Animated.View>
 
       {/* Offer Detail Modal */}
       <Modal
@@ -249,8 +285,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  fullScreenAnimatedContainer: {
+    flex: 1,
+  },
   scrollContent: {
     padding: 16,
+    paddingTop: 18, // Extra padding to avoid collision with phone notification bar
     paddingBottom: 40,
   },
   header: {
@@ -299,8 +339,8 @@ const styles = StyleSheet.create({
   coinPillLarge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
     borderRadius: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
@@ -308,8 +348,21 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 2,
   },
+  roundCoinCircle: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#FFD700',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#FFA500',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 4,
+    elevation: 3,
+  },
   coinPillText: {
-    marginLeft: 5,
+    marginLeft: 6,
     fontWeight: 'bold',
     fontSize: 14,
   },
@@ -527,4 +580,4 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
 });
-
+              
