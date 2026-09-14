@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { NavigationContainer } from '@react-navigation/native'; // <-- Add this import
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import AppNavigator from './src/navigation/AppNavigator';
 import LoginScreen from './src/screens/LoginScreen';
@@ -104,49 +105,52 @@ export default function App() {
   };
 
   return (
-    <SafeAreaProvider>
-      <StatusBar style={stage === 'app' ? 'dark' : 'light'} />
+    <NavigationContainer> {/* <-- Wrap everything with the single global container here */}
+      <SafeAreaProvider>
+        <StatusBar style={stage === 'app' ? 'dark' : 'light'} />
 
-      {stage === 'splash' && (
-        <SplashScreen onFinish={() => setStage('onboarding')} />
-      )}
+        {stage === 'splash' && (
+          <SplashScreen onFinish={() => setStage('onboarding')} />
+        )}
 
-      {stage === 'onboarding' && (
-        <OnboardingScreen onFinish={() => setStage('login')} />
-      )}
+        {stage === 'onboarding' && (
+          <OnboardingScreen onFinish={() => setStage('login')} />
+        )}
 
-      {stage === 'login' && (
-        <LoginScreen
-          onLoginSuccess={handleGoogleLoginSuccess}
-          onEmailLogin={handleEmailLogin}
-          onForgotPassword={() => setStage('forgotPassword')}
-        />
-      )}
+        {stage === 'login' && (
+          <LoginScreen
+            onLoginSuccess={handleGoogleLoginSuccess}
+            onEmailLogin={handleEmailLogin}
+            onForgotPassword={() => setStage('forgotPassword')}
+          />
+        )}
 
-      {stage === 'signup' && (
-        <SignupScreen googleUser={googleUser} onComplete={handleSignupComplete} />
-      )}
+        {stage === 'signup' && (
+          <SignupScreen googleUser={googleUser} onComplete={handleSignupComplete} />
+        )}
 
-      {stage === 'deviceBlocked' && (
-        <DeviceBlockedScreen registeredEmail={blockedEmail} />
-      )}
+        {stage === 'deviceBlocked' && (
+          <DeviceBlockedScreen registeredEmail={blockedEmail} />
+        )}
 
-      {stage === 'forgotPassword' && (
-        <ForgotPasswordScreen
-          onVerify={handleForgotPasswordVerify}
-          onBack={() => setStage('login')}
-        />
-      )}
+        {stage === 'forgotPassword' && (
+          <ForgotPasswordScreen
+            onVerify={handleForgotPasswordVerify}
+            onBack={() => setStage('login')}
+          />
+        )}
 
-      {stage === 'resetPassword' && (
-        <ResetPasswordScreen onReset={handleResetPassword} />
-      )}
+        {stage === 'resetPassword' && (
+          <ResetPasswordScreen onReset={handleResetPassword} />
+        )}
 
-      {stage === 'app' && (
-        <UserDataProvider deviceId={getDeviceId()}>
-          <AppNavigator />
-        </UserDataProvider>
-      )}
-    </SafeAreaProvider>
+        {stage === 'app' && (
+          <UserDataProvider deviceId={getDeviceId()}>
+            <AppNavigator />
+          </UserDataProvider>
+        )}
+      </SafeAreaProvider>
+    </NavigationContainer>
   );
-        }
+    }
+    
