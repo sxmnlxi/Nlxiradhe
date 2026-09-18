@@ -5,7 +5,6 @@ import { Ionicons } from '@expo/vector-icons';
 const { width } = Dimensions.get('window');
 
 export default function ReferScreen({ navigation }) {
-  const [viewMode, setViewMode] = useState('refer'); // 'refer' or 'status'
   const referCode = 'VERMA7';
   const referralLink = `https://rewardapp.com/download?ref=${referCode}`;
 
@@ -23,7 +22,7 @@ export default function ReferScreen({ navigation }) {
         Animated.timing(bounceValue, { toValue: 1, duration: 600, useNativeDriver: true }),
       ])
     ).start();
-  }, [viewMode]);
+  }, []);
 
   const handleShare = async () => {
     try {
@@ -35,50 +34,6 @@ export default function ReferScreen({ navigation }) {
     }
   };
 
-  // --- SUB-VIEW: REFERRAL STATUS SCREEN ---
-  if (viewMode === 'status') {
-    const referredUsersList = [
-      { id: '1', name: 'Aarav Sharma', tasksDone: 'Stocko KYC, CoinSwitch Setup, Parimatch Sign-up, Daily Survey, App Test', coinsEarned: '10 Coins' },
-      { id: '2', name: 'Priya Verma', tasksDone: 'Stocko KYC, CoinSwitch Setup, Parimatch Sign-up, Daily Survey, Social Share', coinsEarned: '10 Coins' },
-      { id: '3', name: 'Rahul Gupta', tasksDone: 'Stocko KYC, CoinSwitch Setup (2 tasks pending completion)', coinsEarned: '0 Coins (Pending)' },
-    ];
-
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => setViewMode('refer')} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={20} color="#1A1A1A" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Referral Status</Text>
-          <View style={{ width: 36 }} />
-        </View>
-
-        <ScrollView contentContainerStyle={styles.scrollContent}>
-          <Text style={styles.subHeaderInfo}>Track your friends who joined using your code. You earn 10 coins once they complete 5 tasks!</Text>
-          {referredUsersList.map(item => (
-            <View key={item.id} style={styles.statusCard}>
-              <View style={styles.userRow}>
-                <View style={styles.avatarMini}>
-                  <Ionicons name="person" size={16} color="#FF3E86" />
-                </View>
-                <Text style={styles.userName}>{item.name}</Text>
-              </View>
-              <View style={styles.detailsBox}>
-                <Text style={styles.tasksLabel}>Tasks Completed:</Text>
-                <Text style={styles.tasksText}>{item.tasksDone}</Text>
-              </View>
-              <View style={styles.coinRewardRow}>
-                <Text style={styles.coinEarnedLabel}>Reward Status:</Text>
-                <Text style={styles.coinEarnedValue}>+{item.coinsEarned}</Text>
-              </View>
-            </View>
-          ))}
-        </ScrollView>
-      </SafeAreaView>
-    );
-  }
-
-  // --- MAIN REFER SCREEN ---
   return (
     <SafeAreaView style={styles.container}>
       <Animated.View style={{ flex: 1, opacity: fadeAnim }}>
@@ -90,7 +45,8 @@ export default function ReferScreen({ navigation }) {
             </TouchableOpacity>
             <Text style={styles.headerTitle}>Share & Earn</Text>
             
-            <TouchableOpacity style={styles.statusHeaderBtn} onPress={() => setViewMode('status')}>
+            {/* Yahan se hum ReferralStatusScreen par redirect kar rahe hain */}
+            <TouchableOpacity style={styles.statusHeaderBtn} onPress={() => navigation.navigate('ReferralStatus')}>
               <Ionicons name="stats-chart" size={14} color="#FF3E86" style={{ marginRight: 4 }} />
               <Text style={styles.statusHeaderText}>Status</Text>
             </TouchableOpacity>
@@ -101,14 +57,14 @@ export default function ReferScreen({ navigation }) {
             <View style={styles.heroBadgeRow}>
               <Animated.View style={{ transform: [{ scale: bounceValue }], marginRight: 6 }}>
                 <View style={styles.roundCoinCircle}>
-                  <Text style={styles.rupeeSymbolHero}>₹</Text>
+                  <Ionicons name="logo-bitcoin" size={12} color="#1A1A1A" />
                 </View>
               </Animated.View>
-              <Text style={styles.heroBadgeText}>EARN 10 COINS PER REFERRAL</Text>
+              <Text style={styles.heroBadgeText}>EARN BIG REWARDS PER REFERRAL</Text>
             </View>
             <Text style={styles.heroTitle}>Invite Friends & Earn Rewards!</Text>
             <Text style={styles.heroSubtitle}>
-              Earn 10 coins when your friend joins using your referral code and completes 5 different tasks successfully.
+              Earn rewards when your friend joins using your referral code and completes tasks successfully.
             </Text>
           </View>
 
@@ -146,37 +102,6 @@ export default function ReferScreen({ navigation }) {
             </TouchableOpacity>
           </View>
 
-          {/* Milestone Rules */}
-          <View style={styles.stepsContainer}>
-            <View style={styles.ruleHeaderRow}>
-              <Ionicons name="shield-checkmark" size={20} color="#27ae60" style={{ marginRight: 6 }} />
-              <Text style={styles.stepsHeaderTitle}>Milestone & Anti-Bot Policy</Text>
-            </View>
-            <View style={styles.stepRow}>
-              <View style={styles.stepIconBox}><Ionicons name="flash-outline" size={20} color="#FF3E86" /></View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.stepTitle}>1. Milestone Rule (5 Tasks)</Text>
-                <Text style={styles.stepDesc}>Referral counts as successful only when your friend finishes 5 different tasks.</Text>
-              </View>
-            </View>
-            <View style={styles.stepRow}>
-              <View style={styles.stepIconBox}>
-                <View style={styles.roundCoinSmall}><Text style={styles.rupeeSymbolSmall}>₹</Text></View>
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.stepTitle}>2. Earn 10 Coins</Text>
-                <Text style={styles.stepDesc}>Receive 10 coins instantly added to your balance upon milestone completion.</Text>
-              </View>
-            </View>
-            <View style={styles.stepRow}>
-              <View style={styles.stepIconBox}><Ionicons name="ban-outline" size={20} color="#e74c3c" /></View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.stepTitle}>3. Strict Anti-Bot Verification</Text>
-                <Text style={styles.stepDesc}>No bots or fake accounts allowed. Violations lead to immediate suspension.</Text>
-              </View>
-            </View>
-          </View>
-
         </ScrollView>
       </Animated.View>
     </SafeAreaView>
@@ -193,8 +118,7 @@ const styles = StyleSheet.create({
   statusHeaderText: { fontSize: 12, fontWeight: 'bold', color: '#FF3E86' },
   heroCard: { backgroundColor: '#FF3E86', borderRadius: 24, padding: 24, alignItems: 'center', marginBottom: 24, borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)' },
   heroBadgeRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 12, paddingVertical: 5, borderRadius: 12, marginBottom: 12 },
-  roundCoinCircle: { width: 20, height: 20, borderRadius: 10, backgroundColor: '#FFD700', justifyContent: 'center', alignItems: 'center' },
-  rupeeSymbolHero: { fontSize: 12, fontWeight: '900', color: '#1A1A1A' },
+  roundCoinCircle: { width: 22, height: 22, borderRadius: 11, backgroundColor: '#FFD700', justifyContent: 'center', alignItems: 'center' },
   heroBadgeText: { color: '#FFD700', fontWeight: '900', fontSize: 11 },
   heroTitle: { color: '#FFFFFF', fontSize: 20, fontWeight: '900', textAlign: 'center', marginBottom: 8 },
   heroSubtitle: { color: '#F8F9FA', fontSize: 13, textAlign: 'center', lineHeight: 18 },
@@ -212,25 +136,5 @@ const styles = StyleSheet.create({
   actionButtonRow: { marginBottom: 24 },
   shareButton: { backgroundColor: '#FF3E86', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', paddingVertical: 16, borderRadius: 25, elevation: 4 },
   shareButtonText: { color: '#FFFFFF', fontWeight: 'bold', fontSize: 15 },
-  stepsContainer: { backgroundColor: '#FFFFFF', borderRadius: 20, padding: 20, borderWidth: 1, borderColor: '#FFE4E1', elevation: 2 },
-  ruleHeaderRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
-  stepsHeaderTitle: { fontSize: 16, fontWeight: 'bold', color: '#1A1A1A' },
-  stepRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
-  stepIconBox: { width: 42, height: 42, borderRadius: 21, backgroundColor: '#FFF0F5', justifyContent: 'center', alignItems: 'center', marginRight: 14, borderWidth: 1, borderColor: '#FFE4E1' },
-  roundCoinSmall: { width: 20, height: 20, borderRadius: 10, backgroundColor: '#FFD700', justifyContent: 'center', alignItems: 'center' },
-  rupeeSymbolSmall: { fontSize: 12, fontWeight: '900', color: '#1A1A1A' },
-  stepTitle: { fontSize: 14, fontWeight: 'bold', color: '#1A1A1A', marginBottom: 2 },
-  stepDesc: { fontSize: 12, color: '#666666', lineHeight: 16 },
-  subHeaderInfo: { fontSize: 13, color: '#666666', marginBottom: 16, lineHeight: 18 },
-  statusCard: { backgroundColor: '#FFFFFF', borderRadius: 16, padding: 16, marginBottom: 14, borderWidth: 1, borderColor: '#FFE4E1', elevation: 2 },
-  userRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
-  avatarMini: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#FFF0F5', justifyContent: 'center', alignItems: 'center', marginRight: 10, borderWidth: 1, borderColor: '#FFE4E1' },
-  userName: { fontSize: 15, fontWeight: 'bold', color: '#1A1A1A' },
-  detailsBox: { backgroundColor: '#F8F9FA', padding: 10, borderRadius: 10, marginBottom: 10 },
-  tasksLabel: { fontSize: 11, fontWeight: 'bold', color: '#888888', marginBottom: 2 },
-  tasksText: { fontSize: 12, color: '#333333', lineHeight: 16 },
-  coinRewardRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderTopWidth: 1, borderTopColor: '#F0F0F0', paddingTop: 8 },
-  coinEarnedLabel: { fontSize: 12, fontWeight: '600', color: '#666666' },
-  coinEarnedValue: { fontSize: 13, fontWeight: 'bold', color: '#27ae60' },
 });
-    
+  
