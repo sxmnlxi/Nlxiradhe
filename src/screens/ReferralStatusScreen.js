@@ -3,7 +3,7 @@ import { StyleSheet, Text, View, ScrollView, TouchableOpacity, SafeAreaView, Ani
 import { Ionicons } from '@expo/vector-icons';
 
 export default function ReferStatusScreen({ navigation }) {
-  // Referral status list containing exactly: user name, coin earned, and task completed status (/5)
+  // Referral status list displaying only user name, task progress (/5), and coins earned
   const [referralsList] = useState([
     { id: '1', name: 'Aarav Sharma', coinsEarned: '500 Coins', taskStatus: 'Task Completed: 5/5' },
     { id: '2', name: 'Priya Verma', coinsEarned: '500 Coins', taskStatus: 'Task Completed: 5/5' },
@@ -12,7 +12,7 @@ export default function ReferStatusScreen({ navigation }) {
     { id: '5', name: 'Vikram Malhotra', coinsEarned: '100 Coins', taskStatus: 'Task Completed: 1/5' },
   ]);
 
-  // Super animated entrance and bouncing coin effects
+  // Super-animated entrance and bouncing coin effects
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const bounceValue = useRef(new Animated.Value(1)).current;
 
@@ -85,7 +85,7 @@ const styles = StyleSheet.create({
     alignItems: 'center', 
     justifyContent: 'space-between', 
     paddingHorizontal: 16, 
-    paddingTop: 28, // Prevents notification bar collision
+    paddingTop: 28, // Prevents status/notification bar collision
     paddingBottom: 12,
   },
   backButton: { 
@@ -160,4 +160,3 @@ const styles = StyleSheet.create({
     color: '#D84315' 
   },
 });
-      
