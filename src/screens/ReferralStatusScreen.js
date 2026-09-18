@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, SafeAreaView, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-export default function ReferStatusScreen({ navigation }) {
+export default function ReferralStatusScreen({ navigation }) {
   // Referral status list displaying only user name, task progress (/5), and coins earned
   const [referralsList] = useState([
     { id: '1', name: 'Aarav Sharma', coinsEarned: '500 Coins', taskStatus: 'Task Completed: 5/5' },
@@ -85,7 +85,7 @@ const styles = StyleSheet.create({
     alignItems: 'center', 
     justifyContent: 'space-between', 
     paddingHorizontal: 16, 
-    paddingTop: 28, // Prevents status/notification bar collision
+    paddingTop: 28, 
     paddingBottom: 12,
   },
   backButton: { 
@@ -113,7 +113,7 @@ const styles = StyleSheet.create({
     padding: 16, 
     borderRadius: 16, 
     marginBottom: 12, 
-    borderWidth: 1, 
+    borderWidth: 1,
     borderColor: '#FFE4E1', 
     elevation: 2 
   },
@@ -160,3 +160,4 @@ const styles = StyleSheet.create({
     color: '#D84315' 
   },
 });
+    
